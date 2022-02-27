@@ -118,6 +118,15 @@ func (n *node) styleSize() {
 		n.ContentWidth = max(n.ContentWidth, n.ContentHeight)
 		n.ContentHeight = max(n.ContentWidth, n.ContentHeight)
 	}
+	if n.style.Button != nil {
+		n.style.Button.rect = n.InnerRect()
+	}
+	if n.style.Scrollbar != nil {
+		inner := n.InnerRect()
+		n.style.Scrollbar.x = inner.Max.X
+		n.style.Scrollbar.y = inner.Min.Y
+		n.style.Scrollbar.height = inner.Dy()
+	}
 }
 
 func (n *node) fillWidth(w int) {

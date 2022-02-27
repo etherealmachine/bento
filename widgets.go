@@ -17,6 +17,8 @@ const (
 
 type Button struct {
 	states [4]*NineSlice
+	rect   image.Rectangle
+	state  ButtonState
 }
 
 func NewButton(img *ebiten.Image, widths, heights [3]int) *Button {
@@ -28,21 +30,25 @@ func NewButton(img *ebiten.Image, widths, heights [3]int) *Button {
 	return b
 }
 
+func (b *Button) Bounds() image.Rectangle {
+	return b.rect
+}
+
 func (b *Button) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	return keys, nil
 }
 
-func (b *Button) Draw(screen *ebiten.Image, x, y, width, height int, state ButtonState) {
-	b.states[int(state)].Draw(screen, x, y, width, height)
+func (b *Button) Draw(screen *ebiten.Image) {
+	b.states[int(b.state)].Draw(screen, b.rect.Min.X, b.rect.Min.Y, b.rect.Dx(), b.rect.Dy())
 }
 
 type Scrollbar struct {
-	states         [3][4]*NineSlice
-	scrollUp       *image.Rectangle
-	scrollDown     *image.Rectangle
-	handle         *image.Rectangle
-	x, y, height   int
-	scrollPosition float64
+	states       [3][4]*NineSlice
+	scrollUp     *image.Rectangle
+	scrollDown   *image.Rectangle
+	handle       *image.Rectangle
+	x, y, height int
+	position     float64
 }
 
 func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
@@ -57,24 +63,27 @@ func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
 	return s
 }
 
+func (s *Scrollbar) Position() float64 {
+	return s.position
+}
+
 func (s *Scrollbar) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	return keys, nil
 }
 
 func (s *Scrollbar) Draw(screen *ebiten.Image) {
-	/*
-		h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
-		trackHeight := height - 2*h
-		s.states[state][0].Draw(screen, x, y, s.Width(), h)
-		s.states[state][1].Draw(screen, x, y+h, s.Width(), trackHeight)
-		s.states[state][2].Draw(screen, x, y+h+int(scrollPosition*float64(trackHeight-h)), s.Width(), h)
-		s.states[state][3].Draw(screen, x, y+height-h, s.Width(), h)
-	*/
+	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
+	trackHeight := s.height - 2*h
+	s.states[0][0].Draw(screen, s.x, s.y, w, h)
+	s.states[0][1].Draw(screen, s.x, s.y+h, w, trackHeight)
+	s.states[0][2].Draw(screen, s.x, s.y+h+int(s.position*float64(trackHeight-h)), w, h)
+	s.states[0][3].Draw(screen, s.x, s.y+s.height-h, w, h)
 }
 
 func (s *Scrollbar) Bounds() image.Rectangle {
-	return image.Rect(0, 0, 0, 0)
-	//return s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+	return image.Rect(s.x, s.y, s.x+w, s.y+s.height)
 }
 
 /*
