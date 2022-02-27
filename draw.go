@@ -26,18 +26,21 @@ func (n *Node) Draw(img *ebiten.Image) {
 		// Inner
 		drawBox(img, inner, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true)
 	}
-	if n.XMLName.Local == "button" && n.Style != nil && n.Style.NineSlice != nil {
-		frame := 0
-		if n.Hover {
-			frame = 1
-		}
-		if n.Active {
-			frame = 2
-		}
-		if n.Disabled {
-			frame = 3
-		}
-		n.Style.NineSlice.draw(img, frame, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
+	if n.Style != nil && n.Style.Border != nil {
+		n.Style.Border.Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
+	}
+	state := Idle
+	if n.Hover {
+		state = Hover
+	}
+	if n.Active {
+		state = Active
+	}
+	if n.Disabled {
+		state = Disabled
+	}
+	if n.XMLName.Local == "button" && n.Style != nil && n.Style.Button != nil {
+		n.Style.Button.Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy(), state)
 	}
 	if n.Debug {
 		// Content
@@ -56,7 +59,7 @@ func (n *Node) Draw(img *ebiten.Image) {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
 			img.DrawImage(cropped, op)
-			n.Style.Scrollbar.drawScrollbar(img, inner.Max.X, inner.Min.Y, inner.Dy())
+			n.Style.Scrollbar.Draw(img, inner.Max.X, inner.Min.Y, inner.Dy(), float64(n.Scroll)/float64(n.TextBounds.Dy()-n.ContentHeight), state)
 		} else {
 			text.DrawParagraph(img, n.Content(), n.Style.Font, n.Style.Color, content.Min.X, content.Min.Y, n.Style.MaxWidth, -n.TextBounds.Min.Y)
 		}

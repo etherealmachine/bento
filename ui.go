@@ -258,9 +258,14 @@ func (n *Node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 					root.Component.OnClick(n)
 				}
 				_, dy := ebiten.Wheel()
-				n.Scroll += int(dy) * Scrollspeed
-				if n.Scroll < 0 {
-					n.Scroll = 0
+				if n.TextBounds != nil {
+					n.Scroll += int(dy) * Scrollspeed
+					if n.Scroll < 0 {
+						n.Scroll = 0
+					}
+					if n.Scroll >= n.TextBounds.Dy()-n.ContentHeight {
+						n.Scroll = n.TextBounds.Dy() - n.ContentHeight
+					}
 				}
 			}
 		}

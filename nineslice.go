@@ -4,8 +4,62 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+type ButtonState int
+
+const (
+	Idle     = ButtonState(0)
+	Hover    = ButtonState(1)
+	Active   = ButtonState(2)
+	Disabled = ButtonState(3)
+)
+
+type Button struct {
+	states [4]*NineSlice
+}
+
+func NewButton(img *ebiten.Image, widths, heights [3]int) *Button {
+	b := &Button{}
+	w := widths[0] + widths[1] + widths[2]
+	for i := 0; i < 4; i++ {
+		b.states[i] = NewNineSlice(img, widths, heights, w*i, 0)
+	}
+	return b
+}
+
+func (b *Button) Draw(screen *ebiten.Image, x, y, width, height int, state ButtonState) {
+	b.states[int(state)].Draw(screen, x, y, width, height)
+}
+
+type Scrollbar struct {
+	states [3][4]*NineSlice
+}
+
+func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
+	s := &Scrollbar{}
+	w := widths[0] + widths[1] + widths[2]
+	h := heights[0] + heights[1] + heights[2]
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 4; j++ {
+			s.states[i][j] = NewNineSlice(img, widths, heights, w*i, j*h)
+		}
+	}
+	return s
+}
+
+func (s *Scrollbar) Draw(screen *ebiten.Image, x, y, height int, scrollPosition float64, state ButtonState) {
+	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
+	trackHeight := height - 2*h
+	s.states[state][0].Draw(screen, x, y, s.Width(), h)
+	s.states[state][1].Draw(screen, x, y+h, s.Width(), trackHeight)
+	s.states[state][2].Draw(screen, x, y+h+int(scrollPosition*float64(trackHeight-h)), s.Width(), h)
+	s.states[state][3].Draw(screen, x, y+height-h, s.Width(), h)
+}
+
+func (s *Scrollbar) Width() int {
+	return s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+}
 
 /*
 	Branched from https://github.com/blizzy78/ebitenui/blob/ca1a302d930b/image/nineslice.go
@@ -33,42 +87,37 @@ import (
 // The corner tiles are drawn as-is, while the center columns and rows of tiles will be stretched to fit the desired
 // width and height.
 type NineSlice struct {
-	image   *ebiten.Image
-	width   int
 	widths  [3]int
 	heights [3]int
-
-	frames [][9]*ebiten.Image
+	tiles   [9]*ebiten.Image
 }
 
-func NewNineSlice(filename string, width int, widths, heights [3]int, frames int, horizontal bool) *NineSlice {
+func NewNineSlice(img *ebiten.Image, widths, heights [3]int, offsetX, offsetY int) *NineSlice {
 	n := &NineSlice{
-		width:   width,
 		widths:  widths,
 		heights: heights,
 	}
-	n.image, _, _ = ebitenutil.NewImageFromFile(filename)
-	n.frames = make([][9]*ebiten.Image, frames)
-	for i := 0; i < frames; i++ {
-		n.frames[i] = n.createTiles(i, horizontal)
-	}
-	n.image = nil
+	n.createTiles(img, offsetX, offsetY)
 	return n
 }
 
-func (n *NineSlice) draw(screen *ebiten.Image, frame int, x, y, width, height int) {
-	n.drawTiles(screen, n.frames[frame], x, y, width, height)
+func (n *NineSlice) createTiles(img *ebiten.Image, ox, oy int) {
+	min := img.Bounds().Min
+	sy := min.Y
+	for r, sh := range n.heights {
+		sx := min.X
+		for c, sw := range n.widths {
+			if sh > 0 && sw > 0 {
+				rect := image.Rect(ox, oy, ox+sw, oy+sh).Add(image.Point{sx, sy})
+				n.tiles[r*3+c] = img.SubImage(rect).(*ebiten.Image)
+			}
+			sx += sw
+		}
+		sy += sh
+	}
 }
 
-func (n *NineSlice) drawScrollbar(screen *ebiten.Image, x, y, height int) {
-	h := n.heights[0] + n.heights[1] + n.heights[2]
-	n.drawTiles(screen, n.frames[0], x, y, n.width, h)
-	n.drawTiles(screen, n.frames[1], x, y+h, n.width, height-2*h)
-	n.drawTiles(screen, n.frames[2], x, y+h, n.width, h)
-	n.drawTiles(screen, n.frames[5], x, y+height-h, n.width, h)
-}
-
-func (n *NineSlice) drawTiles(screen *ebiten.Image, tiles [9]*ebiten.Image, x, y, width, height int) {
+func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int) {
 	sy := 0
 	ty := y
 	for r, sh := range n.heights {
@@ -90,7 +139,7 @@ func (n *NineSlice) drawTiles(screen *ebiten.Image, tiles [9]*ebiten.Image, x, y
 				tw = sw
 			}
 
-			n.drawTile(screen, tiles[r*3+c], tx, ty, sw, sh, tw, th)
+			n.drawTile(screen, n.tiles[r*3+c], tx, ty, sw, sh, tw, th)
 
 			sx += sw
 			tx += tw
@@ -117,30 +166,4 @@ func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, t
 	opts.GeoM.Translate(float64(tx), float64(ty))
 
 	screen.DrawImage(tile, &opts)
-}
-
-func (n *NineSlice) createTiles(frame int, horizontal bool) [9]*ebiten.Image {
-	var tiles [9]*ebiten.Image
-	min := n.image.Bounds().Min
-
-	height := n.heights[0] + n.heights[1] + n.heights[2]
-	sy := min.Y
-	for r, sh := range n.heights {
-		sx := min.X
-		for c, sw := range n.widths {
-			if sh > 0 && sw > 0 {
-				rect := image.Rect(0, 0, sw, sh)
-				if horizontal {
-					rect = rect.Add(image.Point{Y: frame * height})
-				} else {
-					rect = rect.Add(image.Point{X: frame * n.width})
-				}
-				rect = rect.Add(image.Point{sx, sy})
-				tiles[r*3+c] = n.image.SubImage(rect).(*ebiten.Image)
-			}
-			sx += sw
-		}
-		sy += sh
-	}
-	return tiles
 }

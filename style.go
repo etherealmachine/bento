@@ -28,8 +28,9 @@ type Style struct {
 	FontName            string            `xml:",omitempty"`
 	FontSize            int               `xml:",omitempty"`
 	Font                font.Face         `xml:"-"`
-	NineSlice           *NineSlice        `xml:"-"`
-	Scrollbar           *NineSlice        `xml:"-"`
+	Border              *NineSlice        `xml:"-"`
+	Button              *Button           `xml:"-"`
+	Scrollbar           *Scrollbar        `xml:"-"`
 	Background          *ebiten.Image     `xml:"-"`
 	MinWidth, MinHeight int               `xml:",omitempty"`
 	MaxWidth, MaxHeight int               `xml:",omitempty"`

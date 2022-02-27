@@ -5,6 +5,7 @@ import (
 
 	"github.com/etherealmachine/bento/v1"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type TextDemo struct {
@@ -31,6 +32,7 @@ func (t *TextDemo) Header() *bento.Style {
 }
 
 func (t *TextDemo) Text() *bento.Style {
+	scrollbar, _, _ := ebitenutil.NewImageFromFile("scrollbar.png")
 	return &bento.Style{
 		Extends:   "p",
 		FontName:  "Gentium",
@@ -38,7 +40,7 @@ func (t *TextDemo) Text() *bento.Style {
 		Margin:    &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
 		Padding:   &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
 		Color:     &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Scrollbar: bento.NewNineSlice("scrollbar.png", 32, [3]int{6, 20, 6}, [3]int{6, 20, 6}, 6, true),
+		Scrollbar: bento.NewScrollbar(scrollbar, [3]int{6, 20, 6}, [3]int{6, 20, 6}),
 		Attrs: map[string]string{
 			"maxWidth":  "50em",
 			"maxHeight": "8em",
@@ -47,14 +49,15 @@ func (t *TextDemo) Text() *bento.Style {
 }
 
 func (t *TextDemo) Button() *bento.Style {
+	button, _, _ := ebitenutil.NewImageFromFile("button.png")
 	return &bento.Style{
-		Extends:   "button",
-		FontName:  "Gentium",
-		FontSize:  16,
-		Margin:    &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
-		Padding:   &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
-		Color:     &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		NineSlice: bento.NewNineSlice("button.png", 32, [3]int{6, 20, 6}, [3]int{6, 20, 6}, 4, false),
+		Extends:  "button",
+		FontName: "Gentium",
+		FontSize: 16,
+		Margin:   &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
+		Padding:  &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
+		Color:    &color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		Button:   bento.NewButton(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}),
 	}
 }
 
