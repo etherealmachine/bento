@@ -28,12 +28,21 @@ func NewButton(img *ebiten.Image, widths, heights [3]int) *Button {
 	return b
 }
 
+func (b *Button) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	return keys, nil
+}
+
 func (b *Button) Draw(screen *ebiten.Image, x, y, width, height int, state ButtonState) {
 	b.states[int(state)].Draw(screen, x, y, width, height)
 }
 
 type Scrollbar struct {
-	states [3][4]*NineSlice
+	states         [3][4]*NineSlice
+	scrollUp       *image.Rectangle
+	scrollDown     *image.Rectangle
+	handle         *image.Rectangle
+	x, y, height   int
+	scrollPosition float64
 }
 
 func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
@@ -48,17 +57,24 @@ func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
 	return s
 }
 
-func (s *Scrollbar) Draw(screen *ebiten.Image, x, y, height int, scrollPosition float64, state ButtonState) {
-	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
-	trackHeight := height - 2*h
-	s.states[state][0].Draw(screen, x, y, s.Width(), h)
-	s.states[state][1].Draw(screen, x, y+h, s.Width(), trackHeight)
-	s.states[state][2].Draw(screen, x, y+h+int(scrollPosition*float64(trackHeight-h)), s.Width(), h)
-	s.states[state][3].Draw(screen, x, y+height-h, s.Width(), h)
+func (s *Scrollbar) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	return keys, nil
 }
 
-func (s *Scrollbar) Width() int {
-	return s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+func (s *Scrollbar) Draw(screen *ebiten.Image) {
+	/*
+		h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
+		trackHeight := height - 2*h
+		s.states[state][0].Draw(screen, x, y, s.Width(), h)
+		s.states[state][1].Draw(screen, x, y+h, s.Width(), trackHeight)
+		s.states[state][2].Draw(screen, x, y+h+int(scrollPosition*float64(trackHeight-h)), s.Width(), h)
+		s.states[state][3].Draw(screen, x, y+height-h, s.Width(), h)
+	*/
+}
+
+func (s *Scrollbar) Bounds() image.Rectangle {
+	return image.Rect(0, 0, 0, 0)
+	//return s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
 }
 
 /*

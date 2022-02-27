@@ -16,7 +16,7 @@ func (t *TextDemo) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (t *TextDemo) OnClick(btn *bento.Node) {
+func (t *TextDemo) OnClick(btn bento.Box) {
 	t.Clicks++
 }
 

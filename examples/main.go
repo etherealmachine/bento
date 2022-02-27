@@ -11,15 +11,12 @@ import (
 )
 
 type Demo struct {
-	ui *bento.Node
+	ui bento.Box
 }
 
 func (d *Demo) Update() error {
 	var keys []ebiten.Key
 	keys = inpututil.AppendPressedKeys(keys)
-	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
-		d.ui.ToggleDebug()
-	}
 	if _, err := d.ui.Update(keys); err != nil {
 		return err
 	}

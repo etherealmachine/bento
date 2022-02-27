@@ -9,38 +9,39 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func (n *Node) OuterRect() *image.Rectangle {
-	r := image.Rect(n.X, n.Y, n.X+n.OuterWidth, n.Y+n.OuterHeight)
-	return &r
+func (n *node) Bounds() image.Rectangle {
+	return n.OuterRect()
 }
 
-func (n *Node) InnerRect() *image.Rectangle {
+func (n *node) OuterRect() image.Rectangle {
+	return image.Rect(n.X, n.Y, n.X+n.OuterWidth, n.Y+n.OuterHeight)
+}
+
+func (n *node) InnerRect() image.Rectangle {
 	mt, _, _, ml := n.margin()
-	r := image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
-	return &r
+	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
-func (n *Node) ContentRect() *image.Rectangle {
+func (n *node) ContentRect() image.Rectangle {
 	mt, _, _, ml := n.margin()
 	pt, _, _, pl := n.padding()
-	r := image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
-	return &r
+	return image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
 }
 
-func (n *Node) updateSize() {
+func (n *node) updateSize() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.Display {
+	if !n.style.Display {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
 		n.OuterHeight = 0
 		return
 	}
-	if n.XMLName.Local == "button" || n.XMLName.Local == "text" {
-		bounds := text.BoundString(n.Style.Font, n.Content())
+	if n.tag == "button" || n.tag == "text" {
+		bounds := text.BoundString(n.style.Font, n.templateContent())
 		textHeight := bounds.Dy()
-		metrics := n.Style.Font.Metrics()
+		metrics := n.style.Font.Metrics()
 		minHeight := metrics.Height.Round()
 		if textHeight < minHeight {
 			textHeight = minHeight
@@ -48,22 +49,22 @@ func (n *Node) updateSize() {
 		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = textHeight
-	} else if n.XMLName.Local == "p" {
-		bounds := text.BoundParagraph(n.Style.Font, n.Content(), n.Style.MaxWidth)
+	} else if n.tag == "p" {
+		bounds := text.BoundParagraph(n.style.Font, n.templateContent(), n.style.MaxWidth)
 		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(n.Style.MinHeight, bounds.Dy())
-		if n.Style.MaxHeight > 0 && n.Style.MaxHeight < n.ContentHeight {
-			n.ContentHeight = n.Style.MaxHeight
+		n.ContentHeight = max(n.style.MinHeight, bounds.Dy())
+		if n.style.MaxHeight > 0 && n.style.MaxHeight < n.ContentHeight {
+			n.ContentHeight = n.style.MaxHeight
 		}
-	} else if n.XMLName.Local == "img" {
-		bounds := n.Style.Background.Bounds()
+	} else if n.tag == "img" {
+		bounds := n.style.Background.Bounds()
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	}
-	for _, c := range n.Children {
+	for _, c := range n.children {
 		c.updateSize()
-		switch n.XMLName.Local {
+		switch n.tag {
 		case "grid":
 			n.ContentWidth = max(n.ContentWidth, c.OuterWidth)
 			n.ContentHeight += c.OuterHeight
@@ -82,44 +83,44 @@ func (n *Node) updateSize() {
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
 	if n.TextBounds != nil && n.TextBounds.Dy() > n.ContentHeight {
-		n.OuterWidth += n.Style.Scrollbar.Width()
+		n.OuterWidth += n.style.Scrollbar.Bounds().Dy()
 	}
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
-func (n *Node) styleSize() {
-	if n.Style == nil {
+func (n *node) styleSize() {
+	if n.style == nil {
 		return
 	}
-	if n.Style.Attrs["width"] == "100%" {
-		if n.Parent == nil {
+	if n.style.Attrs["width"] == "100%" {
+		if n.parent == nil {
 			w, _ := ebiten.WindowSize()
 			n.ContentWidth = w
 		} else {
-			n.ContentWidth = max(n.ContentWidth, n.Parent.InnerWidth)
+			n.ContentWidth = max(n.ContentWidth, n.parent.InnerWidth)
 		}
 	}
-	if n.Style.Attrs["height"] == "100%" {
-		if n.Parent == nil {
+	if n.style.Attrs["height"] == "100%" {
+		if n.parent == nil {
 			_, h := ebiten.WindowSize()
 			n.ContentHeight = h
 		} else {
-			n.ContentHeight = max(n.ContentWidth, n.Parent.InnerHeight)
+			n.ContentHeight = max(n.ContentWidth, n.parent.InnerHeight)
 		}
 	}
-	if n.Style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.Style.MinWidth)
+	if n.style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
 	}
-	if n.Style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.Style.MinHeight)
+	if n.style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
 	}
-	if n.Style.Attrs["aspectRatio"] == "1:1" {
+	if n.style.Attrs["aspectRatio"] == "1:1" {
 		n.ContentWidth = max(n.ContentWidth, n.ContentHeight)
 		n.ContentHeight = max(n.ContentWidth, n.ContentHeight)
 	}
 }
 
-func (n *Node) fillWidth(w int) {
+func (n *node) fillWidth(w int) {
 	_, mr, _, ml := n.margin()
 	_, pr, _, pl := n.padding()
 	n.OuterWidth = w
@@ -127,7 +128,7 @@ func (n *Node) fillWidth(w int) {
 	n.ContentWidth = n.InnerWidth - pr - pl
 }
 
-func (n *Node) fillHeight(h int) {
+func (n *node) fillHeight(h int) {
 	mt, _, mb, _ := n.margin()
 	pt, _, pb, _ := n.padding()
 	n.OuterHeight = h
@@ -135,10 +136,10 @@ func (n *Node) fillHeight(h int) {
 	n.ContentHeight = n.InnerHeight - pt - pb
 }
 
-func (n *Node) layout() {
+func (n *node) doLayout() {
 	hj, vj := Start, Start
-	if n.Style != nil && n.Style.Attrs["justify"] != "" {
-		justs := strings.Split(n.Style.Attrs["justify"], " ")
+	if n.style != nil && n.style.Attrs["justify"] != "" {
+		justs := strings.Split(n.style.Attrs["justify"], " ")
 		if len(justs) == 1 {
 			hj = ParseJustification(justs[0])
 			vj = hj
@@ -146,7 +147,7 @@ func (n *Node) layout() {
 			hj, vj = ParseJustification(justs[0]), ParseJustification(justs[1])
 		}
 	}
-	dir := n.XMLName.Local
+	dir := n.tag
 	if dir == "grid" {
 		dir = "col"
 	}
@@ -155,7 +156,7 @@ func (n *Node) layout() {
 	maxChildHeight := 0
 	totalChildWidths := 0
 	totalChildHeights := 0
-	for _, c := range n.Children {
+	for _, c := range n.children {
 		maxChildWidth = max(maxChildWidth, c.OuterWidth)
 		maxChildHeight = max(maxChildHeight, c.OuterHeight)
 		totalChildWidths += c.OuterWidth
@@ -175,38 +176,38 @@ func (n *Node) layout() {
 
 	switch hj {
 	case Start:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.X
 			if i > 0 && dir == "row" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.X + prev.OuterWidth
 			}
 			c.X = offset
 		}
 	case End:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.X + hspace
 			if i > 0 && dir == "row" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.X + prev.OuterWidth + hspace
 			}
 			c.X = offset
 		}
 	case Center:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.X + hspace/2
 			if i > 0 && dir == "row" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.X + prev.OuterWidth
 			}
 			c.X = offset
 		}
 	case Evenly:
-		gap := hspace / (len(n.Children) + 1)
-		for i, c := range n.Children {
+		gap := hspace / (len(n.children) + 1)
+		for i, c := range n.children {
 			offset := r.Min.X + gap
 			if i > 0 && dir == "row" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.X + prev.OuterWidth + gap
 			}
 			c.X = offset
@@ -214,9 +215,9 @@ func (n *Node) layout() {
 	case Stretch:
 		w := n.InnerWidth
 		if dir == "row" {
-			w = n.InnerWidth / len(n.Children)
+			w = n.InnerWidth / len(n.children)
 		}
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			c.X = r.Min.X
 			if dir == "row" {
 				c.X += w * i
@@ -228,38 +229,38 @@ func (n *Node) layout() {
 	}
 	switch vj {
 	case Start:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.Y
 			if i > 0 && dir == "col" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.Y + prev.OuterHeight
 			}
 			c.Y = offset
 		}
 	case End:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.Y + vspace
 			if i > 0 && dir == "col" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.Y + prev.OuterHeight + vspace
 			}
 			c.Y = offset
 		}
 	case Center:
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			offset := r.Min.Y + vspace/2
 			if i > 0 && dir == "col" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.Y + prev.OuterHeight
 			}
 			c.Y = offset
 		}
 	case Evenly:
-		gap := vspace / (len(n.Children) + 1)
-		for i, c := range n.Children {
+		gap := vspace / (len(n.children) + 1)
+		for i, c := range n.children {
 			offset := r.Min.Y + gap
 			if i > 0 && dir == "col" {
-				prev := n.Children[i-1]
+				prev := n.children[i-1]
 				offset = prev.Y + prev.OuterHeight + gap
 			}
 			c.Y = offset
@@ -267,9 +268,9 @@ func (n *Node) layout() {
 	case Stretch:
 		h := n.InnerHeight
 		if dir == "col" {
-			h = n.InnerHeight / len(n.Children)
+			h = n.InnerHeight / len(n.children)
 		}
-		for i, c := range n.Children {
+		for i, c := range n.children {
 			c.Y = r.Min.Y
 			if dir == "col" {
 				c.Y += h * i
@@ -279,7 +280,7 @@ func (n *Node) layout() {
 	default:
 		panic(fmt.Errorf("can't handle vertical justification %d", vj))
 	}
-	for _, c := range n.Children {
-		c.layout()
+	for _, c := range n.children {
+		c.doLayout()
 	}
 }

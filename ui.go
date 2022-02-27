@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -28,58 +27,60 @@ var (
 
 type Component interface {
 	UI() string
-	OnClick(btn *Node)
+	OnClick(btn Box)
 	OnKeyDown(key ebiten.Key) bool
 }
 
-type Node struct {
-	XMLName xml.Name
-	Layout
-	State
-	Parent    *Node             `xml:"-"`
-	Children  []*Node           `xml:",any"`
-	CharData  string            `xml:",chardata"`
-	Attrs     map[string]string `xml:"-"`
-	Style     *Style            `xml:",omitempty"`
-	Component Component         `xml:"-"`
-	Context   interface{}       `xml:"-"`
-	Repeat    *Node
-	Debug     bool                          `xml:",attr"`
-	attrTmpls map[string]*template.Template `xml:"-"`
-	tmpl      *template.Template            `xml:"-"`
-	buffer    *ebiten.Image
+type Box interface {
+	Update(keys []ebiten.Key) ([]ebiten.Key, error)
+	Draw(img *ebiten.Image)
+	Bounds() image.Rectangle
 }
 
-func (n *Node) Clone(parent *Node) *Node {
+type node struct {
+	tag      string
+	children []*node
+	style    *Style
+	layout
+	parent      *node
+	component   Component
+	context     interface{}
+	repeat      *node
+	debug       bool
+	attrs       map[string]string
+	attrTmpls   map[string]*template.Template
+	content     string
+	contentTmpl *template.Template
+	buffer      *ebiten.Image
+}
+
+func (n *node) clone(parent *node) *node {
 	attrs := make(map[string]string)
-	for k, v := range n.Attrs {
+	for k, v := range n.attrs {
 		attrs[k] = v
 	}
 	if parent == nil {
-		parent = n.Parent
+		parent = n.parent
 	}
-	clone := &Node{
-		XMLName: xml.Name{
-			Local: n.XMLName.Local,
-			Space: n.XMLName.Space,
-		},
-		Parent:    parent,
-		CharData:  n.CharData,
-		Attrs:     attrs,
-		Style:     n.Style,
-		Component: n.Component,
-		Context:   n.Context,
-		attrTmpls: n.attrTmpls,
-		tmpl:      n.tmpl,
+	clone := &node{
+		tag:         n.tag,
+		parent:      parent,
+		attrs:       attrs,
+		style:       n.style,
+		component:   n.component,
+		context:     n.context,
+		attrTmpls:   n.attrTmpls,
+		content:     n.content,
+		contentTmpl: n.contentTmpl,
 	}
-	clone.Children = make([]*Node, len(n.Children))
-	for i, c := range n.Children {
-		clone.Children[i] = c.Clone(clone)
+	clone.children = make([]*node, len(n.children))
+	for i, c := range n.children {
+		clone.children[i] = c.clone(clone)
 	}
 	return clone
 }
 
-type Layout struct {
+type layout struct {
 	X, Y                        int `xml:",attr"`
 	ContentWidth, ContentHeight int `xml:",attr"`
 	InnerWidth, InnerHeight     int `xml:",attr"`
@@ -87,69 +88,59 @@ type Layout struct {
 	TextBounds                  *image.Rectangle
 }
 
-type State struct {
-	Hover    bool `xml:",attr,omitempty"`
-	Active   bool `xml:",attr,omitempty"`
-	Disabled bool `xml:",attr,omitempty"`
-	Hidden   bool `xml:",attr,omitempty"`
-	Display  bool `xml:",attr,omitempty"`
-	Scroll   int  `xml:",attr,omitempty"`
-}
-
-func (n *Node) Visit(f func(n *Node) error) error {
+func (n *node) visit(f func(n *node) error) error {
 	if err := f(n); err != nil {
 		return err
 	}
-	for _, c := range n.Children {
-		if err := c.Visit(f); err != nil {
+	for _, c := range n.children {
+		if err := c.visit(f); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func Build(c Component) (*Node, error) {
-	root := &Node{}
-	root.Children = nil
-	root.Component = c
-	root.Context = c
+func Build(c Component) (Box, error) {
+	root := &node{}
+	root.component = c
+	root.context = c
 	if err := xml.Unmarshal([]byte(c.UI()), root); err != nil {
 		return nil, err
 	}
-	return root, root.Visit(func(n *Node) error {
-		n.Component = c
-		if n.Context == nil {
-			n.Context = n.Parent.Context
+	return root, root.visit(func(n *node) error {
+		n.component = c
+		if n.context == nil {
+			n.context = n.parent.context
 		}
-		if r, _ := utf8.DecodeRuneInString(n.XMLName.Local); unicode.IsUpper(r) {
-			m := reflect.ValueOf(n.Component).MethodByName(n.XMLName.Local)
+		if r, _ := utf8.DecodeRuneInString(n.tag); unicode.IsUpper(r) {
+			m := reflect.ValueOf(n.component).MethodByName(n.tag)
 			res := m.Call(nil)
-			n.Style = res[0].Interface().(*Style)
-			n.XMLName.Local = n.Style.Extends
-			if n.Style.FontName != "" {
-				n.Style.Font = text.Font(n.Style.FontName, n.Style.FontSize)
+			n.style = res[0].Interface().(*Style)
+			n.tag = n.style.Extends
+			if n.style.FontName != "" {
+				n.style.Font = text.Font(n.style.FontName, n.style.FontSize)
 			} else {
-				n.Style.Font = text.Font("sans", 16)
+				n.style.Font = text.Font("sans", 16)
 			}
 		} else {
-			n.Style = &Style{
+			n.style = &Style{
 				Font:  text.Font("sans", 16),
 				Color: &color.RGBA{A: 255},
 			}
 		}
-		if err := n.Style.Adopt(n.Attrs); err != nil {
+		if err := n.style.adopt(n.attrs); err != nil {
 			return err
 		}
-		if strings.Contains(n.CharData, "{{") {
+		if strings.Contains(n.content, "{{") {
 			tmpl := template.New("")
 			var err error
-			n.tmpl, err = tmpl.Parse(n.CharData)
+			n.contentTmpl, err = tmpl.Parse(n.content)
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 		n.attrTmpls = make(map[string]*template.Template)
-		for k, v := range n.Attrs {
+		for k, v := range n.attrs {
 			if strings.Contains(v, "{{") {
 				tmpl := template.New("")
 				var err error
@@ -160,67 +151,36 @@ func Build(c Component) (*Node, error) {
 				n.attrTmpls[k] = tmpl
 			}
 		}
-		if repeat := n.Attrs["repeat"]; repeat != "" {
-			n.Repeat = n.Children[0]
-			v := reflect.ValueOf(n.Context).Elem().FieldByName(repeat)
-			n.Children = make([]*Node, v.Len())
+		if repeat := n.attrs["repeat"]; repeat != "" {
+			n.repeat = n.children[0]
+			v := reflect.ValueOf(n.context).Elem().FieldByName(repeat)
+			n.children = make([]*node, v.Len())
 			for i := 0; i < v.Len(); i++ {
 				val := v.Index(i)
-				clone := n.Repeat.Clone(nil)
+				clone := n.repeat.clone(nil)
 				ctx := make(map[string]interface{})
 				ctx["item"] = val.Interface()
 				ctx["index"] = i
-				ctx["parent"] = n.Context
-				clone.Context = ctx
-				n.Children[i] = clone
+				ctx["parent"] = n.context
+				clone.context = ctx
+				n.children[i] = clone
 			}
 		}
 		return nil
 	})
 }
 
-func (n *Node) Path() string {
-	if n.Parent == nil {
-		return n.XMLName.Local
+func (n *node) path() string {
+	if n.parent == nil {
+		return n.tag
 	}
-	return n.Parent.Path() + "->" + n.XMLName.Local
+	return n.parent.path() + "->" + n.tag
 }
 
-func (n *Node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	type node Node
-	if err := d.DecodeElement((*node)(n), &start); err != nil {
-		return err
-	}
-	n.CharData = strings.TrimSpace(n.CharData)
-	n.Attrs = make(map[string]string)
-	for _, attr := range start.Attr {
-		n.Attrs[attr.Name.Local] = attr.Value
-	}
-	for _, c := range n.Children {
-		c.Parent = n
-	}
-	return nil
-}
-
-func (n *Node) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	start.Name = n.XMLName
-	var context string
-	if n.Context != nil {
-		context = reflect.TypeOf(n.Context).String()
-	}
-	start.Attr = append(start.Attr,
-		xml.Attr{
-			Name:  xml.Name{Local: "Context"},
-			Value: context,
-		})
-	type node Node
-	return e.EncodeElement((*node)(n), start)
-}
-
-func (n *Node) Content() string {
-	if n.tmpl != nil {
+func (n *node) templateContent() string {
+	if n.contentTmpl != nil {
 		buf := new(bytes.Buffer)
-		if err := n.tmpl.Execute(buf, n.Context); err != nil {
+		if err := n.contentTmpl.Execute(buf, n.context); err != nil {
 			return ""
 		}
 		content := buf.String()
@@ -229,64 +189,30 @@ func (n *Node) Content() string {
 		}
 		return content
 	}
-	return n.CharData
+	return n.content
 }
 
-func (n *Node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
-	x, y := ebiten.CursorPosition()
-	root := n
-	n.Visit(func(n *Node) error {
-		n.Hover = false
-		n.Active = false
-
-		n.Disabled = n.templateAttr("disabled", false)
-		n.Hidden = n.templateAttr("hidden", false)
-		n.Display = n.templateAttr("display", true)
-
-		if n.Disabled {
-			return nil
-		}
-
-		pt, _, _, pl := n.padding()
-		if x >= n.X+pl && x <= n.X+pl+n.InnerWidth && y >= n.Y+pt && y <= n.Y+pt+n.InnerHeight {
-			if len(n.Children) == 0 {
-				n.Hover = true
-				if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-					n.Active = true
-				}
-				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-					root.Component.OnClick(n)
-				}
-				_, dy := ebiten.Wheel()
-				if n.TextBounds != nil {
-					n.Scroll += int(dy) * Scrollspeed
-					if n.Scroll < 0 {
-						n.Scroll = 0
-					}
-					if n.Scroll >= n.TextBounds.Dy()-n.ContentHeight {
-						n.Scroll = n.TextBounds.Dy() - n.ContentHeight
-					}
-				}
-			}
-		}
-		return nil
-	})
+func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	//x, y := ebiten.CursorPosition()
 	var unconsumedKeys []ebiten.Key
 	for _, k := range keys {
 		if inpututil.IsKeyJustPressed(k) {
-			if !root.Component.OnKeyDown(k) {
+			if !n.component.OnKeyDown(k) {
 				unconsumedKeys = append(unconsumedKeys, k)
 			}
 		}
 	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+		n.toggleDebug()
+	}
 	return unconsumedKeys, nil
 }
 
-func (n *Node) templateAttr(attr string, def bool) bool {
-	if v := n.Attrs[attr]; v != "" {
+func (n *node) templateAttr(attr string, def bool) bool {
+	if v := n.attrs[attr]; v != "" {
 		if tmpl := n.attrTmpls[attr]; tmpl != nil {
 			buf := new(bytes.Buffer)
-			if err := tmpl.Execute(buf, n.Context); err != nil {
+			if err := tmpl.Execute(buf, n.context); err != nil {
 				log.Fatal(err)
 			} else {
 				v = buf.String()
@@ -302,9 +228,9 @@ func (n *Node) templateAttr(attr string, def bool) bool {
 	return def
 }
 
-func (n *Node) margin() (int, int, int, int) {
-	if n.Style != nil {
-		m := n.Style.Margin
+func (n *node) margin() (int, int, int, int) {
+	if n.style != nil {
+		m := n.style.Margin
 		if m != nil {
 			return m.Top, m.Right, m.Bottom, m.Left
 		}
@@ -312,9 +238,9 @@ func (n *Node) margin() (int, int, int, int) {
 	return 0, 0, 0, 0
 }
 
-func (n *Node) padding() (int, int, int, int) {
-	if n.Style != nil {
-		p := n.Style.Padding
+func (n *node) padding() (int, int, int, int) {
+	if n.style != nil {
+		p := n.style.Padding
 		if p != nil {
 			return p.Top, p.Right, p.Bottom, p.Left
 		}
@@ -322,22 +248,11 @@ func (n *Node) padding() (int, int, int, int) {
 	return 0, 0, 0, 0
 }
 
-func (n *Node) ToggleDebug() {
-	n.Visit(func(n *Node) error {
-		n.Debug = !n.Debug
+func (n *node) toggleDebug() {
+	n.visit(func(n *node) error {
+		n.debug = !n.debug
 		return nil
 	})
-}
-
-func (n *Node) Dump(out string) {
-	if f, err := os.Create(out); err == nil {
-		enc := xml.NewEncoder(f)
-		enc.Indent("", "  ")
-		if err := enc.Encode(n); err != nil {
-			log.Println(err)
-		}
-		f.Close()
-	}
 }
 
 func max(a, b int) int {

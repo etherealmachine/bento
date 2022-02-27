@@ -1,8 +1,6 @@
 package bento
 
 import (
-	"encoding/hex"
-	"encoding/xml"
 	"image/color"
 	"log"
 	"regexp"
@@ -23,22 +21,24 @@ type Spacing struct {
 }
 
 type Style struct {
-	Extends             string            `xml:",omitempty"`
-	Attrs               map[string]string `xml:"-"`
-	FontName            string            `xml:",omitempty"`
-	FontSize            int               `xml:",omitempty"`
-	Font                font.Face         `xml:"-"`
-	Border              *NineSlice        `xml:"-"`
-	Button              *Button           `xml:"-"`
-	Scrollbar           *Scrollbar        `xml:"-"`
-	Background          *ebiten.Image     `xml:"-"`
-	MinWidth, MinHeight int               `xml:",omitempty"`
-	MaxWidth, MaxHeight int               `xml:",omitempty"`
-	Margin, Padding     *Spacing          `xml:",omitempty"`
-	Color               *color.RGBA       `xml:"-"`
+	Extends             string
+	Attrs               map[string]string
+	FontName            string
+	FontSize            int
+	Font                font.Face
+	Border              *NineSlice
+	Button              *Button
+	Scrollbar           *Scrollbar
+	Background          *ebiten.Image
+	MinWidth, MinHeight int
+	MaxWidth, MaxHeight int
+	Margin, Padding     *Spacing
+	Color               *color.RGBA
+	Hidden              bool
+	Display             bool
 }
 
-func (s *Style) Adopt(attrs map[string]string) error {
+func (s *Style) adopt(attrs map[string]string) error {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
@@ -77,6 +77,8 @@ func (s *Style) Adopt(attrs map[string]string) error {
 		}
 		s.Background = img
 	}
+	// TODO
+	s.Display = true
 	s.MinWidth = s.parseSize("minWidth")
 	s.MaxWidth = s.parseSize("maxWidth")
 	s.MinHeight = s.parseSize("minHeight")
@@ -102,19 +104,4 @@ func parseSize(spec string, f font.Face) int {
 		}
 	}
 	return 0
-}
-
-func (s *Style) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	for k, v := range s.Attrs {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: k}, Value: v})
-	}
-	if s.Color != nil {
-		start.Attr = append(start.Attr,
-			xml.Attr{
-				Name:  xml.Name{Local: "Color"},
-				Value: "0x" + hex.EncodeToString([]byte{s.Color.R, s.Color.G, s.Color.B, s.Color.A}),
-			})
-	}
-	type style Style
-	return e.EncodeElement((*style)(s), start)
 }

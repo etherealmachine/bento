@@ -233,7 +233,7 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, rect *image.Rectangle, ha Alignment, va Alignment) error {
+func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, rect image.Rectangle, ha Alignment, va Alignment) error {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return nil
