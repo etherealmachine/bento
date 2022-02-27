@@ -81,6 +81,9 @@ func (n *Node) updateSize() {
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
+	if n.TextBounds != nil && n.TextBounds.Dy() > n.ContentHeight {
+		n.OuterWidth += n.Style.Scrollbar.width
+	}
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
