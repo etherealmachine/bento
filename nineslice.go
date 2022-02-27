@@ -63,6 +63,8 @@ func (n *NineSlice) draw(screen *ebiten.Image, frame int, x, y, width, height in
 func (n *NineSlice) drawScrollbar(screen *ebiten.Image, x, y, height int) {
 	h := n.heights[0] + n.heights[1] + n.heights[2]
 	n.drawTiles(screen, n.frames[0], x, y, n.width, h)
+	n.drawTiles(screen, n.frames[1], x, y+h, n.width, height-2*h)
+	n.drawTiles(screen, n.frames[2], x, y+h, n.width, h)
 	n.drawTiles(screen, n.frames[5], x, y+height-h, n.width, h)
 }
 
