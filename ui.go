@@ -261,10 +261,7 @@ func (n *node) padding() (int, int, int, int) {
 }
 
 func (n *node) toggleDebug() {
-	n.visit(func(n *node) error {
-		n.debug = !n.debug
-		return nil
-	})
+	n.debug = !n.debug
 }
 
 func max(a, b int) int {
