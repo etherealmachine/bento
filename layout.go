@@ -6,32 +6,31 @@ import (
 	"strings"
 
 	"github.com/etherealmachine/bento/text"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (n *node) Bounds() image.Rectangle {
-	return n.OuterRect()
+	return n.outerRect()
 }
 
-func (n *node) OuterRect() image.Rectangle {
+func (n *node) outerRect() image.Rectangle {
 	return image.Rect(n.X, n.Y, n.X+n.OuterWidth, n.Y+n.OuterHeight)
 }
 
-func (n *node) InnerRect() image.Rectangle {
-	mt, _, _, ml := n.margin()
+func (n *node) innerRect() image.Rectangle {
+	mt, _, _, ml := n.style.margin()
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
-func (n *node) ContentRect() image.Rectangle {
-	mt, _, _, ml := n.margin()
-	pt, _, _, pl := n.padding()
+func (n *node) contentRect() image.Rectangle {
+	mt, _, _, ml := n.style.margin()
+	pt, _, _, pl := n.style.padding()
 	return image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
 }
 
 func (n *node) updateSize() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.style.Display {
+	if !n.style.display() {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
@@ -40,23 +39,14 @@ func (n *node) updateSize() {
 	}
 	if n.tag == "button" || n.tag == "text" {
 		bounds := text.BoundString(n.style.Font, n.templateContent())
-		textHeight := bounds.Dy()
-		metrics := n.style.Font.Metrics()
-		minHeight := metrics.Height.Round()
-		if textHeight < minHeight {
-			textHeight = minHeight
-		}
 		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = textHeight
+		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "p" {
 		bounds := text.BoundParagraph(n.style.Font, n.templateContent(), n.style.MaxWidth)
 		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(n.style.MinHeight, bounds.Dy())
-		if n.style.MaxHeight > 0 && n.style.MaxHeight < n.ContentHeight {
-			n.ContentHeight = n.style.MaxHeight
-		}
+		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "img" {
 		bounds := n.style.Background.Bounds()
 		n.ContentWidth = bounds.Dx()
@@ -77,8 +67,8 @@ func (n *node) updateSize() {
 		}
 	}
 	n.styleSize()
-	mt, mr, mb, ml := n.margin()
-	pt, pr, pb, pl := n.padding()
+	mt, mr, mb, ml := n.style.margin()
+	pt, pr, pb, pl := n.style.padding()
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
@@ -88,58 +78,17 @@ func (n *node) updateSize() {
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
-func (n *node) styleSize() {
-	if n.style == nil {
-		return
-	}
-	if n.style.Attrs["width"] == "100%" {
-		if n.parent == nil {
-			w, _ := ebiten.WindowSize()
-			n.fillWidth(w)
-		} else {
-			n.fillWidth(max(n.ContentWidth, n.parent.InnerWidth))
-		}
-	}
-	if n.style.Attrs["height"] == "100%" {
-		if n.parent == nil {
-			_, h := ebiten.WindowSize()
-			n.fillHeight(h)
-		} else {
-			n.fillHeight(max(n.ContentWidth, n.parent.InnerHeight))
-		}
-	}
-	if n.style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
-	}
-	if n.style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
-	}
-	if n.style.Attrs["aspectRatio"] == "1:1" {
-		n.ContentWidth = max(n.ContentWidth, n.ContentHeight)
-		n.ContentHeight = max(n.ContentWidth, n.ContentHeight)
-	}
-	if n.style.Button != nil {
-		n.style.Button.rect = n.InnerRect()
-	}
-	if n.style.Scrollbar != nil {
-		inner := n.InnerRect()
-		n.style.Scrollbar.x = inner.Max.X
-		n.style.Scrollbar.y = inner.Min.Y
-		n.style.Scrollbar.height = inner.Dy()
-	}
-}
-
 func (n *node) fillWidth(w int) {
-	_, mr, _, ml := n.margin()
-	_, pr, _, pl := n.padding()
+	_, mr, _, ml := n.style.margin()
+	_, pr, _, pl := n.style.padding()
 	n.OuterWidth = w
 	n.InnerWidth = n.OuterWidth - ml - mr
 	n.ContentWidth = n.InnerWidth - pr - pl
 }
 
 func (n *node) fillHeight(h int) {
-	mt, _, mb, _ := n.margin()
-	pt, _, pb, _ := n.padding()
+	mt, _, mb, _ := n.style.margin()
+	pt, _, pb, _ := n.style.padding()
 	n.OuterHeight = h
 	n.InnerHeight = n.OuterHeight - mt - mb
 	n.ContentHeight = n.InnerHeight - pt - pb
@@ -181,7 +130,7 @@ func (n *node) doLayout() {
 		vspace = n.InnerHeight - totalChildHeights
 	}
 
-	r := n.InnerRect()
+	r := n.innerRect()
 
 	switch hj {
 	case Start:
@@ -221,18 +170,21 @@ func (n *node) doLayout() {
 			}
 			c.X = offset
 		}
-	case Stretch:
-		w := n.InnerWidth
-		if dir == "row" {
-			w = n.InnerWidth / len(n.children)
-		}
-		for i, c := range n.children {
-			c.X = r.Min.X
-			if dir == "row" {
-				c.X += w * i
-			}
-			c.fillWidth(w)
-		}
+		/*
+				TODO: between and around
+			case Stretch:
+				w := n.InnerWidth
+				if dir == "row" {
+					w = n.InnerWidth / len(n.children)
+				}
+				for i, c := range n.children {
+					c.X = r.Min.X
+					if dir == "row" {
+						c.X += w * i
+					}
+					c.fillWidth(w)
+				}
+		*/
 	default:
 		panic(fmt.Errorf("can't handle horizontal justification %d", hj))
 	}
@@ -274,18 +226,21 @@ func (n *node) doLayout() {
 			}
 			c.Y = offset
 		}
-	case Stretch:
-		h := n.InnerHeight
-		if dir == "col" {
-			h = n.InnerHeight / len(n.children)
-		}
-		for i, c := range n.children {
-			c.Y = r.Min.Y
-			if dir == "col" {
-				c.Y += h * i
-			}
-			c.fillHeight(h)
-		}
+		/*
+				 TODO: between and around
+			case Stretch:
+				h := n.InnerHeight
+				if dir == "col" {
+					h = n.InnerHeight / len(n.children)
+				}
+				for i, c := range n.children {
+					c.Y = r.Min.Y
+					if dir == "col" {
+						c.Y += h * i
+					}
+					c.fillHeight(h)
+				}
+		*/
 	default:
 		panic(fmt.Errorf("can't handle vertical justification %d", vj))
 	}

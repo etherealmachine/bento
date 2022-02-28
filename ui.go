@@ -6,7 +6,6 @@ package bento
 import (
 	"bytes"
 	"image"
-	"image/color"
 	"log"
 	"reflect"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
@@ -112,18 +110,12 @@ func Build(c Component) (Box, error) {
 			res := m.Call(nil)
 			n.style = res[0].Interface().(*Style)
 			n.tag = n.style.Extends
-			if n.style.FontName != "" {
-				n.style.Font = text.Font(n.style.FontName, n.style.FontSize)
-			} else {
-				n.style.Font = text.Font("sans", 16)
-			}
-		} else {
-			n.style = &Style{
-				Font:  text.Font("sans", 16),
-				Color: &color.RGBA{A: 255},
-			}
 		}
-		if err := n.style.adopt(n.attrs); err != nil {
+		if n.style == nil {
+			n.style = new(Style)
+		}
+		n.style.adopt(n.attrs)
+		if err := n.style.parseAttributes(); err != nil {
 			return err
 		}
 		if strings.Contains(n.content, "{{") {
@@ -241,26 +233,6 @@ func (n *node) templateAttr(attr string, def bool) bool {
 		log.Fatalf("invalid value for attribute %s: %s", attr, v)
 	}
 	return def
-}
-
-func (n *node) margin() (int, int, int, int) {
-	if n.style != nil {
-		m := n.style.Margin
-		if m != nil {
-			return m.Top, m.Right, m.Bottom, m.Left
-		}
-	}
-	return 0, 0, 0, 0
-}
-
-func (n *node) padding() (int, int, int, int) {
-	if n.style != nil {
-		p := n.style.Padding
-		if p != nil {
-			return p.Top, p.Right, p.Bottom, p.Left
-		}
-	}
-	return 0, 0, 0, 0
 }
 
 func (n *node) toggleDebug() {

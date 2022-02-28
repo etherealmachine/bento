@@ -1,12 +1,13 @@
 package bento
 
 import (
+	"fmt"
 	"image/color"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
 
+	bentotext "github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -34,12 +35,12 @@ type Style struct {
 	MinWidth, MinHeight int
 	MaxWidth, MaxHeight int
 	Margin, Padding     *Spacing
-	Color               *color.RGBA
+	Color               color.Color
 	Hidden              bool
 	Display             bool
 }
 
-func (s *Style) adopt(attrs map[string]string) error {
+func (s *Style) adopt(attrs map[string]string) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
@@ -48,80 +49,340 @@ func (s *Style) adopt(attrs map[string]string) error {
 			s.Attrs[k] = v
 		}
 	}
-	if margin, exists := s.Attrs["margin"]; exists {
-		i := parseSize(margin, s.Font)
-		if s.Margin == nil {
-			s.Margin = &Spacing{}
+}
+
+func (s *Style) parseAttributes() error {
+	var err error
+	if s.Font == nil {
+		if s.FontName, s.FontSize, s.Font, err = s.parseFont(s.Attrs["font"]); err != nil {
+			return fmt.Errorf("error parsing font: %s", err)
 		}
-		// TODO: multiple margins, space separated
-		s.Margin.Top = i
-		s.Margin.Right = i
-		s.Margin.Bottom = i
-		s.Margin.Left = i
 	}
-	if padding, exists := s.Attrs["padding"]; exists {
-		i := parseSize(padding, s.Font)
-		if s.Padding == nil {
-			s.Padding = &Spacing{}
+	if s.Margin == nil {
+		if s.Margin, err = s.parseSpacing(s.Attrs["margin"]); err != nil {
+			return fmt.Errorf("error parsing margin: %s", err)
 		}
-		// TODO: multiple paddings, space separated
-		s.Padding.Top = i
-		s.Padding.Right = i
-		s.Padding.Bottom = i
-		s.Padding.Left = i
 	}
-	if path := s.Attrs["path"]; path != "" {
-		img, _, err := ebitenutil.NewImageFromFile(path)
+	if s.Padding == nil {
+		if s.Padding, err = s.parseSpacing(s.Attrs["padding"]); err != nil {
+			return fmt.Errorf("error parsing padding: %s", err)
+		}
+	}
+	if s.Background == nil {
+		if s.Background, err = s.loadImage(s.Attrs["bg"]); err != nil {
+			return fmt.Errorf("error parsing bg: %s", err)
+		}
+	}
+	if s.Border == nil {
+		if s.Border, err = s.loadNineSlice(s.Attrs["border"]); err != nil {
+			return fmt.Errorf("error parsing border: %s", err)
+		}
+	}
+	if s.MinWidth == 0 {
+		if s.MinWidth, err = parseSize(s.Attrs["minWidth"], s.Font); err != nil {
+			return fmt.Errorf("error parsing minWidth: %s", err)
+		}
+	}
+	if s.MaxWidth == 0 {
+		if s.MaxWidth, err = parseSize(s.Attrs["maxWidth"], s.Font); err != nil {
+			return fmt.Errorf("error parsing maxWidth: %s", err)
+		}
+	}
+	if s.MinHeight == 0 {
+		if s.MinHeight, err = parseSize(s.Attrs["minHeight"], s.Font); err != nil {
+			return fmt.Errorf("error parsing minHeight: %s", err)
+		}
+	}
+	if s.MaxHeight == 0 {
+		if s.MaxHeight, err = parseSize(s.Attrs["maxHeight"], s.Font); err != nil {
+			return fmt.Errorf("error parsing maxHeight: %s", err)
+		}
+	}
+	if s.Color == nil {
+		if s.Color, err = parseColor(s.Attrs["color"]); err != nil {
+			return fmt.Errorf("error parsing color: %s", err)
+		}
+	}
+	// TODO
+	// s.Button
+	// s.Scrollbar
+	return nil
+}
+
+// parse font spec e.g. "NotoSans 16"
+func (s *Style) parseFont(spec string) (string, int, font.Face, error) {
+	if spec == "" {
+		return "NotoSans", 16, bentotext.Font("NotoSans", 16), nil
+	}
+	a := strings.Split(spec, " ")
+	if len(a) != 2 {
+		return "", 0, nil, fmt.Errorf("invalid font spec %s", spec)
+	}
+	size, err := strconv.Atoi(a[1])
+	if err != nil {
+		return "", 0, nil, err
+	}
+	return a[1], size, bentotext.Font(a[0], size), nil
+}
+
+// parse spacing spec e.g. "24px", "12px 12px", "8px 24px 6px 12px"
+// unints can be px or em
+func (s *Style) parseSpacing(spec string) (*Spacing, error) {
+	if spec == "" {
+		return &Spacing{0, 0, 0, 0}, nil
+	}
+	a := strings.Split(spec, " ")
+	if len(a) == 1 {
+		size, err := parseSize(a[0], s.Font)
 		if err != nil {
-			log.Fatal(err)
-			return err
+			return nil, err
 		}
-		s.Background = img
+		return &Spacing{size, size, size, size}, nil
 	}
-	if spec := s.Attrs["border"]; spec != "" {
-		a := strings.Split(spec, " ")
-		path := a[0]
-		var widths, heights [3]int
+	if len(a) == 2 {
+		x, err := parseSize(a[0], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		y, err := parseSize(a[1], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		return &Spacing{y, x, y, x}, nil
+	}
+	if len(a) == 4 {
+		top, err := parseSize(a[0], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		right, err := parseSize(a[1], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		bottom, err := parseSize(a[2], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		left, err := parseSize(a[3], s.Font)
+		if err != nil {
+			return nil, err
+		}
+		return &Spacing{top, right, bottom, left}, nil
+	}
+	return nil, fmt.Errorf("invalid spacing spec %s", spec)
+}
+
+func (s *Style) loadImage(spec string) (*ebiten.Image, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	img, _, err := ebitenutil.NewImageFromFile(spec)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
+}
+
+// space-separated string with 2, 4 or 7 items
+// path, margin (integer)
+// or
+// path, widths/heights (3 integers in pixels)
+// or
+// path, widths (3 integers in pixels), heights (3 integers in pixels)
+// e.g. "frame.png 10"
+// which, for a 32px sized image is equivaleint to
+// "frame.png 10 12 10" and "frame.png 10 12 10 10 12 10"
+func (s *Style) loadNineSlice(spec string) (*NineSlice, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	a := strings.Split(spec, " ")
+	path := a[0]
+	img, _, err := ebitenutil.NewImageFromFile(path)
+	if err != nil {
+		return nil, err
+	}
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	var widths, heights [3]int
+	if len(a) == 2 {
+		margin, err := strconv.Atoi(a[1])
+		if err != nil {
+			return nil, err
+		}
+		widths[0] = margin
+		widths[2] = margin
+		widths[1] = w - 2*margin
+		heights[0] = margin
+		heights[2] = margin
+		heights[1] = h - 2*margin
+	} else if len(a) == 4 {
+		start, err := strconv.Atoi(a[1])
+		if err != nil {
+			return nil, err
+		}
+		middle, err := strconv.Atoi(a[2])
+		if err != nil {
+			return nil, err
+		}
+		end, err := strconv.Atoi(a[3])
+		if err != nil {
+			return nil, err
+		}
+		widths[0] = start
+		widths[1] = middle
+		widths[2] = end
+		heights[0] = start
+		heights[1] = middle
+		heights[2] = end
+	} else if len(a) == 7 {
 		for i := 0; i < 3; i++ {
 			var err error
 			widths[i], err = strconv.Atoi(a[i+1])
 			heights[i], err = strconv.Atoi(a[i+4])
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
-		img, _, err := ebitenutil.NewImageFromFile(path)
-		if err != nil {
-			log.Fatal(err)
-			return err
+	}
+	return NewNineSlice(img, widths, heights, 0, 0), nil
+}
+
+func parseColor(spec string) (color.Color, error) {
+	c := &color.RGBA{A: 0xff}
+	if spec == "" {
+		return c, nil
+	}
+	if spec[0] != '#' {
+		return nil, fmt.Errorf("invalid color string %s", spec)
+	}
+
+	var err error
+	hexToByte := func(b byte) byte {
+		switch {
+		case b >= '0' && b <= '9':
+			return b - '0'
+		case b >= 'a' && b <= 'f':
+			return b - 'a' + 10
+		case b >= 'A' && b <= 'F':
+			return b - 'A' + 10
+		default:
+			err = fmt.Errorf("invalid color string %s", spec)
+			return 0
 		}
-		s.Border = NewNineSlice(img, widths, heights, 0, 0)
 	}
-	// TODO
-	s.Display = true
-	s.MinWidth = s.parseSize("minWidth")
-	s.MaxWidth = s.parseSize("maxWidth")
-	s.MinHeight = s.parseSize("minHeight")
-	s.MaxHeight = s.parseSize("maxHeight")
-	return nil
+
+	switch len(spec) {
+	case 7:
+		c.R = hexToByte(spec[1])<<4 + hexToByte(spec[2])
+		c.G = hexToByte(spec[3])<<4 + hexToByte(spec[4])
+		c.B = hexToByte(spec[5])<<4 + hexToByte(spec[6])
+	case 4:
+		c.R = hexToByte(spec[1]) * 17
+		c.G = hexToByte(spec[2]) * 17
+		c.B = hexToByte(spec[3]) * 17
+	default:
+		return nil, fmt.Errorf("invalid color string %s", spec)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
-func (s *Style) parseSize(attr string) int {
-	if size, exists := s.Attrs[attr]; exists {
-		return parseSize(size, s.Font)
+func (n *node) styleSize() {
+	/*
+
+		textHeight := bounds.Dy()
+		metrics := n.style.Font.Metrics()
+		minHeight := metrics.Height.Round()
+		if textHeight < minHeight {
+			textHeight = minHeight
+		}
+		max(n.style.MinHeight, bounds.Dy())
+		if n.style.MaxHeight > 0 && n.style.MaxHeight < n.ContentHeight {
+			n.ContentHeight = n.style.MaxHeight
+		}
+	*/
+	if n.style == nil {
+		return
 	}
-	return 0
+	if n.style.Attrs["width"] == "100%" {
+		if n.parent == nil {
+			w, _ := ebiten.WindowSize()
+			n.fillWidth(w)
+		} else {
+			n.fillWidth(max(n.ContentWidth, n.parent.InnerWidth))
+		}
+	}
+	if n.style.Attrs["height"] == "100%" {
+		if n.parent == nil {
+			_, h := ebiten.WindowSize()
+			n.fillHeight(h)
+		} else {
+			n.fillHeight(max(n.ContentWidth, n.parent.InnerHeight))
+		}
+	}
+	if n.style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
+	}
+	if n.style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
+	}
+	if n.style.Attrs["aspectRatio"] == "1:1" {
+		n.ContentWidth = max(n.ContentWidth, n.ContentHeight)
+		n.ContentHeight = max(n.ContentWidth, n.ContentHeight)
+	}
+	if n.style.Button != nil {
+		n.style.Button.rect = n.innerRect()
+	}
+	if n.style.Scrollbar != nil {
+		inner := n.innerRect()
+		n.style.Scrollbar.x = inner.Max.X
+		n.style.Scrollbar.y = inner.Min.Y
+		n.style.Scrollbar.height = inner.Dy()
+	}
 }
 
-func parseSize(spec string, f font.Face) int {
+func (s *Style) margin() (int, int, int, int) {
+	if s != nil {
+		m := s.Margin
+		if m != nil {
+			return m.Top, m.Right, m.Bottom, m.Left
+		}
+	}
+	return 0, 0, 0, 0
+}
+
+func (s *Style) padding() (int, int, int, int) {
+	if s != nil {
+		p := s.Padding
+		if p != nil {
+			return p.Top, p.Right, p.Bottom, p.Left
+		}
+	}
+	return 0, 0, 0, 0
+}
+
+// TODO
+func (s *Style) display() bool {
+	return true
+}
+
+// TODO
+func (s *Style) hidden() bool {
+	return false
+}
+
+func parseSize(spec string, f font.Face) (int, error) {
 	matches := sizeSpec.FindStringSubmatch(spec)
 	if len(matches) == 3 {
 		size, _ := strconv.Atoi(matches[1])
 		if matches[2] == "px" {
-			return size
+			return size, nil
 		} else {
-			return size * text.BoundString(f, "—").Dx()
+			return size * text.BoundString(f, "—").Dx(), nil
 		}
 	}
-	return 0
+	return 0, nil
 }

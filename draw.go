@@ -14,12 +14,12 @@ func (n *node) Draw(img *ebiten.Image) {
 		n.updateSize()
 		n.doLayout()
 	}
-	if n.style.Hidden || !n.style.Display {
+	if n.style.hidden() || !n.style.display() {
 		return
 	}
-	content := n.ContentRect()
-	inner := n.InnerRect()
-	outer := n.OuterRect()
+	content := n.contentRect()
+	inner := n.innerRect()
+	outer := n.outerRect()
 	if n.debug {
 		// Outer
 		drawBox(img, outer, color.White, true)

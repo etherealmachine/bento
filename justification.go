@@ -8,8 +8,9 @@ const (
 	Start = Justification(iota)
 	End
 	Center
+	Between
+	Around
 	Evenly
-	Stretch
 )
 
 func ParseJustification(s string) Justification {
@@ -20,10 +21,12 @@ func ParseJustification(s string) Justification {
 		return End
 	case "center":
 		return Center
+	case "between":
+		return Between
+	case "around":
+		return Around
 	case "evenly":
 		return Evenly
-	case "stretch":
-		return Stretch
 	default:
 		panic(fmt.Errorf("invalid alignment %s", s))
 	}
