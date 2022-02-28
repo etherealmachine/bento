@@ -5,7 +5,7 @@ import (
 	_ "image/png"
 	"log"
 
-	"github.com/etherealmachine/bento/v0"
+	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )

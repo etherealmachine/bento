@@ -5,7 +5,7 @@ import (
 	"image"
 	"strings"
 
-	"github.com/etherealmachine/bento/v0/text"
+	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
