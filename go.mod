@@ -1,4 +1,4 @@
-module github.com/etherealmachine/bento/v1
+module github.com/etherealmachine/bento/v0
 
 go 1.16
 
