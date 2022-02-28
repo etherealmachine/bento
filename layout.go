@@ -95,17 +95,17 @@ func (n *node) styleSize() {
 	if n.style.Attrs["width"] == "100%" {
 		if n.parent == nil {
 			w, _ := ebiten.WindowSize()
-			n.ContentWidth = w
+			n.fillWidth(w)
 		} else {
-			n.ContentWidth = max(n.ContentWidth, n.parent.InnerWidth)
+			n.fillWidth(max(n.ContentWidth, n.parent.InnerWidth))
 		}
 	}
 	if n.style.Attrs["height"] == "100%" {
 		if n.parent == nil {
 			_, h := ebiten.WindowSize()
-			n.ContentHeight = h
+			n.fillHeight(h)
 		} else {
-			n.ContentHeight = max(n.ContentWidth, n.parent.InnerHeight)
+			n.fillHeight(max(n.ContentWidth, n.parent.InnerHeight))
 		}
 	}
 	if n.style.MinWidth > 0 {

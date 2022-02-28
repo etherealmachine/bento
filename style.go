@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	sizeSpec = regexp.MustCompile(`(\d+)(em|px)`)
+	sizeSpec = regexp.MustCompile(`(\d+)(em|px|%)`)
 )
 
 type Spacing struct {

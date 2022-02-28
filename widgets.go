@@ -20,10 +20,11 @@ type Button struct {
 	states  [4]*NineSlice
 	rect    image.Rectangle
 	state   ButtonState
-	onClick func()
+	onClick func(id string)
+	node    *node
 }
 
-func NewButton(img *ebiten.Image, widths, heights [3]int, onClick func()) *Button {
+func NewButton(img *ebiten.Image, widths, heights [3]int, onClick func(id string)) *Button {
 	b := &Button{
 		onClick: onClick,
 	}
@@ -41,7 +42,7 @@ func (b *Button) Bounds() image.Rectangle {
 func (b *Button) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	b.state = buttonState(b.rect)
 	if b.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		b.onClick()
+		b.onClick(b.node.attrs["id"])
 	}
 	return keys, nil
 }

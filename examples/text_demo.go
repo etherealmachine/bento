@@ -16,7 +16,7 @@ func (t *TextDemo) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (t *TextDemo) handleClick() {
+func (t *TextDemo) handleClick(_ string) {
 	t.Clicks++
 }
 

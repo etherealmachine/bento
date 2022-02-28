@@ -188,10 +188,12 @@ func (n *node) templateContent() string {
 }
 
 func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
-	for _, k := range keys {
-		if inpututil.IsKeyJustPressed(k) {
-			if !n.component.OnKeyDown(k) {
-				keys = append(keys, k)
+	if len(keys) == 0 {
+		for _, k := range keys {
+			if inpututil.IsKeyJustPressed(k) {
+				if !n.component.OnKeyDown(k) {
+					keys = append(keys, k)
+				}
 			}
 		}
 	}
@@ -200,6 +202,7 @@ func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	}
 	var err error
 	if btn := n.style.Button; btn != nil {
+		btn.node = n
 		keys, err = btn.Update(keys)
 		if err != nil {
 			return nil, err

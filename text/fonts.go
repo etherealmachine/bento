@@ -1,6 +1,8 @@
 package text
 
 import (
+	"io/ioutil"
+
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
@@ -24,6 +26,15 @@ type fontMap struct {
 func init() {
 	fonts["NotoSans"] = loadFont(notoSans)
 	fonts["RobotoMono"] = loadFont(robotoMono)
+}
+
+func LoadFontFromFile(name, path string) error {
+	def, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	fonts[name] = loadFont(def)
+	return nil
 }
 
 func Font(name string, size int) font.Face {
