@@ -16,7 +16,7 @@ func (t *TextDemo) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (t *TextDemo) OnClick(btn bento.Box) {
+func (t *TextDemo) handleClick() {
 	t.Clicks++
 }
 
@@ -57,7 +57,7 @@ func (t *TextDemo) Button() *bento.Style {
 		Margin:   &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
 		Padding:  &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
 		Color:    &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Button:   bento.NewButton(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}),
+		Button:   bento.NewButton(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}, t.handleClick),
 	}
 }
 

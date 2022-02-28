@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type ButtonState int
@@ -16,13 +17,16 @@ const (
 )
 
 type Button struct {
-	states [4]*NineSlice
-	rect   image.Rectangle
-	state  ButtonState
+	states  [4]*NineSlice
+	rect    image.Rectangle
+	state   ButtonState
+	onClick func()
 }
 
-func NewButton(img *ebiten.Image, widths, heights [3]int) *Button {
-	b := &Button{}
+func NewButton(img *ebiten.Image, widths, heights [3]int, onClick func()) *Button {
+	b := &Button{
+		onClick: onClick,
+	}
 	w := widths[0] + widths[1] + widths[2]
 	for i := 0; i < 4; i++ {
 		b.states[i] = NewNineSlice(img, widths, heights, w*i, 0)
@@ -35,6 +39,10 @@ func (b *Button) Bounds() image.Rectangle {
 }
 
 func (b *Button) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	b.state = buttonState(b.rect)
+	if b.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		b.onClick()
+	}
 	return keys, nil
 }
 
@@ -42,13 +50,15 @@ func (b *Button) Draw(screen *ebiten.Image) {
 	b.states[int(b.state)].Draw(screen, b.rect.Min.X, b.rect.Min.Y, b.rect.Dx(), b.rect.Dy())
 }
 
+var (
+	Scrollspeed = 0.1
+)
+
 type Scrollbar struct {
-	states       [3][4]*NineSlice
-	scrollUp     *image.Rectangle
-	scrollDown   *image.Rectangle
-	handle       *image.Rectangle
-	x, y, height int
-	position     float64
+	states                                               [3][4]*NineSlice
+	x, y, height                                         int
+	position                                             float64
+	topBtnState, bottomBtnState, trackState, handleState ButtonState
 }
 
 func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
@@ -68,6 +78,31 @@ func (s *Scrollbar) Position() float64 {
 }
 
 func (s *Scrollbar) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
+	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
+
+	s.topBtnState = buttonState(image.Rect(s.x, s.y, s.x+w, s.y+h))
+	if s.topBtnState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		s.position -= Scrollspeed
+	}
+	trackHeight := s.height - 2*h
+	s.trackState = buttonState(image.Rect(s.x, s.y+h, s.x+w, s.y+h+trackHeight))
+	s.handleState = buttonState(image.Rect(s.x, s.y+h+int(s.position*float64(trackHeight-h)), s.x+w, s.y+h+int(s.position*float64(trackHeight-h))+h))
+	s.bottomBtnState = buttonState(image.Rect(s.x, s.y+s.height-h, s.x+w, s.y+s.height))
+	if s.bottomBtnState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		s.position += Scrollspeed
+	}
+
+	_, dy := ebiten.Wheel()
+	s.position += dy * Scrollspeed
+
+	// TODO: bad position can crash during Draw
+	if s.position < 0 {
+		s.position = 0
+	}
+	if s.position > 1 {
+		s.position = 1
+	}
 	return keys, nil
 }
 
@@ -75,15 +110,26 @@ func (s *Scrollbar) Draw(screen *ebiten.Image) {
 	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
 	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
 	trackHeight := s.height - 2*h
-	s.states[0][0].Draw(screen, s.x, s.y, w, h)
-	s.states[0][1].Draw(screen, s.x, s.y+h, w, trackHeight)
-	s.states[0][2].Draw(screen, s.x, s.y+h+int(s.position*float64(trackHeight-h)), w, h)
-	s.states[0][3].Draw(screen, s.x, s.y+s.height-h, w, h)
+	s.states[s.topBtnState][0].Draw(screen, s.x, s.y, w, h)
+	s.states[s.trackState][1].Draw(screen, s.x, s.y+h, w, trackHeight)
+	s.states[s.handleState][2].Draw(screen, s.x, s.y+h+int(s.position*float64(trackHeight-h)), w, h)
+	s.states[s.bottomBtnState][3].Draw(screen, s.x, s.y+s.height-h, w, h)
 }
 
 func (s *Scrollbar) Bounds() image.Rectangle {
 	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
 	return image.Rect(s.x, s.y, s.x+w, s.y+s.height)
+}
+
+func buttonState(rect image.Rectangle) ButtonState {
+	x, y := ebiten.CursorPosition()
+	if inside(rect, x, y) {
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			return Active
+		}
+		return Hover
+	}
+	return Idle
 }
 
 /*

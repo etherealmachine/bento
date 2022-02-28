@@ -21,13 +21,8 @@ import (
 	"encoding/xml"
 )
 
-var (
-	Scrollspeed = 10
-)
-
 type Component interface {
 	UI() string
-	OnClick(btn Box)
 	OnKeyDown(key ebiten.Key) bool
 }
 
@@ -193,19 +188,36 @@ func (n *node) templateContent() string {
 }
 
 func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
-	//x, y := ebiten.CursorPosition()
-	var unconsumedKeys []ebiten.Key
 	for _, k := range keys {
 		if inpututil.IsKeyJustPressed(k) {
 			if !n.component.OnKeyDown(k) {
-				unconsumedKeys = append(unconsumedKeys, k)
+				keys = append(keys, k)
 			}
 		}
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
 		n.toggleDebug()
 	}
-	return unconsumedKeys, nil
+	var err error
+	if btn := n.style.Button; btn != nil {
+		keys, err = btn.Update(keys)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if scroll := n.style.Scrollbar; scroll != nil {
+		keys, err = scroll.Update(keys)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, c := range n.children {
+		keys, err = c.Update(keys)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return keys, nil
 }
 
 func (n *node) templateAttr(attr string, def bool) bool {
@@ -267,4 +279,8 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func inside(r image.Rectangle, x, y int) bool {
+	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
 }
