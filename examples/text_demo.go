@@ -3,7 +3,7 @@ package main
 import (
 	"image/color"
 
-	"github.com/etherealmachine/bento/v1"
+	"github.com/etherealmachine/bento/v0"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
