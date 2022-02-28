@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -76,6 +77,25 @@ func (s *Style) adopt(attrs map[string]string) error {
 			return err
 		}
 		s.Background = img
+	}
+	if spec := s.Attrs["border"]; spec != "" {
+		a := strings.Split(spec, " ")
+		path := a[0]
+		var widths, heights [3]int
+		for i := 0; i < 3; i++ {
+			var err error
+			widths[i], err = strconv.Atoi(a[i+1])
+			heights[i], err = strconv.Atoi(a[i+4])
+			if err != nil {
+				return err
+			}
+		}
+		img, _, err := ebitenutil.NewImageFromFile(path)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+		s.Border = NewNineSlice(img, widths, heights, 0, 0)
 	}
 	// TODO
 	s.Display = true
