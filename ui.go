@@ -114,7 +114,7 @@ func Build(c Component) (Box, error) {
 		if n.style == nil {
 			n.style = new(Style)
 		}
-		n.style.adopt(n.attrs)
+		n.style.adopt(n)
 		if err := n.style.parseAttributes(); err != nil {
 			return err
 		}

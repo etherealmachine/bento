@@ -3,6 +3,7 @@ package bento
 import (
 	"fmt"
 	"image/color"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,33 +39,35 @@ type Style struct {
 	Color               color.Color
 	Hidden              bool
 	Display             bool
+	node                *node
 }
 
-func (s *Style) adopt(attrs map[string]string) {
+func (s *Style) adopt(node *node) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
-	for k, v := range attrs {
+	for k, v := range node.attrs {
 		if _, exists := s.Attrs[k]; !exists {
 			s.Attrs[k] = v
 		}
 	}
+	s.node = node
 }
 
 func (s *Style) parseAttributes() error {
 	var err error
 	if s.Font == nil {
-		if s.FontName, s.FontSize, s.Font, err = s.parseFont(s.Attrs["font"]); err != nil {
+		if s.FontName, s.FontSize, s.Font, err = parseFont(s.Attrs["font"]); err != nil {
 			return fmt.Errorf("error parsing font: %s", err)
 		}
 	}
 	if s.Margin == nil {
-		if s.Margin, err = s.parseSpacing(s.Attrs["margin"]); err != nil {
+		if s.Margin, err = parseSpacing(s.Attrs["margin"], s.Font); err != nil {
 			return fmt.Errorf("error parsing margin: %s", err)
 		}
 	}
 	if s.Padding == nil {
-		if s.Padding, err = s.parseSpacing(s.Attrs["padding"]); err != nil {
+		if s.Padding, err = parseSpacing(s.Attrs["padding"], s.Font); err != nil {
 			return fmt.Errorf("error parsing padding: %s", err)
 		}
 	}
@@ -74,7 +77,7 @@ func (s *Style) parseAttributes() error {
 		}
 	}
 	if s.Border == nil {
-		if s.Border, err = s.loadNineSlice(s.Attrs["border"]); err != nil {
+		if s.Border, err = loadNineSlice(s.Attrs["border"]); err != nil {
 			return fmt.Errorf("error parsing border: %s", err)
 		}
 	}
@@ -103,14 +106,24 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing color: %s", err)
 		}
 	}
+	if s.Button == nil {
+		if s.Button, err = parseButton(s.Attrs["btn"]); err != nil {
+			return fmt.Errorf("error parsing button: %s", err)
+		}
+		if s.Button != nil {
+			s.Button.onClick = func(id string) {
+				m := reflect.ValueOf(s.node.component).MethodByName(s.Attrs["onClick"])
+				m.Call([]reflect.Value{reflect.ValueOf(id)})
+			}
+		}
+	}
 	// TODO
-	// s.Button
 	// s.Scrollbar
 	return nil
 }
 
 // parse font spec e.g. "NotoSans 16"
-func (s *Style) parseFont(spec string) (string, int, font.Face, error) {
+func parseFont(spec string) (string, int, font.Face, error) {
 	if spec == "" {
 		return "NotoSans", 16, bentotext.Font("NotoSans", 16), nil
 	}
@@ -127,43 +140,43 @@ func (s *Style) parseFont(spec string) (string, int, font.Face, error) {
 
 // parse spacing spec e.g. "24px", "12px 12px", "8px 24px 6px 12px"
 // unints can be px or em
-func (s *Style) parseSpacing(spec string) (*Spacing, error) {
+func parseSpacing(spec string, font font.Face) (*Spacing, error) {
 	if spec == "" {
 		return &Spacing{0, 0, 0, 0}, nil
 	}
 	a := strings.Split(spec, " ")
 	if len(a) == 1 {
-		size, err := parseSize(a[0], s.Font)
+		size, err := parseSize(a[0], font)
 		if err != nil {
 			return nil, err
 		}
 		return &Spacing{size, size, size, size}, nil
 	}
 	if len(a) == 2 {
-		x, err := parseSize(a[0], s.Font)
+		x, err := parseSize(a[0], font)
 		if err != nil {
 			return nil, err
 		}
-		y, err := parseSize(a[1], s.Font)
+		y, err := parseSize(a[1], font)
 		if err != nil {
 			return nil, err
 		}
 		return &Spacing{y, x, y, x}, nil
 	}
 	if len(a) == 4 {
-		top, err := parseSize(a[0], s.Font)
+		top, err := parseSize(a[0], font)
 		if err != nil {
 			return nil, err
 		}
-		right, err := parseSize(a[1], s.Font)
+		right, err := parseSize(a[1], font)
 		if err != nil {
 			return nil, err
 		}
-		bottom, err := parseSize(a[2], s.Font)
+		bottom, err := parseSize(a[2], font)
 		if err != nil {
 			return nil, err
 		}
-		left, err := parseSize(a[3], s.Font)
+		left, err := parseSize(a[3], font)
 		if err != nil {
 			return nil, err
 		}
@@ -192,15 +205,35 @@ func (s *Style) loadImage(spec string) (*ebiten.Image, error) {
 // e.g. "frame.png 10"
 // which, for a 32px sized image is equivaleint to
 // "frame.png 10 12 10" and "frame.png 10 12 10 10 12 10"
-func (s *Style) loadNineSlice(spec string) (*NineSlice, error) {
+func loadNineSlice(spec string) (*NineSlice, error) {
 	if spec == "" {
 		return nil, nil
 	}
+	img, widths, heights, err := loadImageFromSpec(spec, 1)
+	if err != nil {
+		return nil, err
+	}
+	return NewNineSlice(img, *widths, *heights, 0, 0), nil
+}
+
+// e.g. "button.png 6"
+func parseButton(spec string) (*Button, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	img, widths, heights, err := loadImageFromSpec(spec, 4)
+	if err != nil {
+		return nil, err
+	}
+	return NewButton(img, *widths, *heights, nil), nil
+}
+
+func loadImageFromSpec(spec string, frames int) (*ebiten.Image, *[3]int, *[3]int, error) {
 	a := strings.Split(spec, " ")
 	path := a[0]
 	img, _, err := ebitenutil.NewImageFromFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
@@ -208,26 +241,26 @@ func (s *Style) loadNineSlice(spec string) (*NineSlice, error) {
 	if len(a) == 2 {
 		margin, err := strconv.Atoi(a[1])
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		widths[0] = margin
 		widths[2] = margin
-		widths[1] = w - 2*margin
+		widths[1] = w/frames - 2*margin
 		heights[0] = margin
 		heights[2] = margin
 		heights[1] = h - 2*margin
 	} else if len(a) == 4 {
 		start, err := strconv.Atoi(a[1])
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		middle, err := strconv.Atoi(a[2])
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		end, err := strconv.Atoi(a[3])
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 		widths[0] = start
 		widths[1] = middle
@@ -241,11 +274,11 @@ func (s *Style) loadNineSlice(spec string) (*NineSlice, error) {
 			widths[i], err = strconv.Atoi(a[i+1])
 			heights[i], err = strconv.Atoi(a[i+4])
 			if err != nil {
-				return nil, err
+				return nil, nil, nil, err
 			}
 		}
 	}
-	return NewNineSlice(img, widths, heights, 0, 0), nil
+	return img, &widths, &heights, nil
 }
 
 func parseColor(spec string) (color.Color, error) {
