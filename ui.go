@@ -5,6 +5,7 @@ package bento
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"log"
 	"reflect"
@@ -107,6 +108,9 @@ func Build(c Component) (Box, error) {
 		}
 		if r, _ := utf8.DecodeRuneInString(n.tag); unicode.IsUpper(r) {
 			m := reflect.ValueOf(n.component).MethodByName(n.tag)
+			if !m.IsValid() {
+				return fmt.Errorf("%s: failed to find method for tag %s", reflect.TypeOf(n.component), n.tag)
+			}
 			res := m.Call(nil)
 			n.style = res[0].Interface().(*Style)
 			n.tag = n.style.Extends
@@ -123,7 +127,7 @@ func Build(c Component) (Box, error) {
 			var err error
 			n.contentTmpl, err = tmpl.Parse(n.content)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("failed to parse template %s: %s", n.content, err)
 			}
 		}
 		n.attrTmpls = make(map[string]*template.Template)

@@ -57,6 +57,15 @@ func (s *Style) adopt(node *node) {
 func (s *Style) parseAttributes() error {
 	var err error
 	if s.Font == nil {
+		if s.FontName != "" {
+			size := 16
+			if s.FontSize > 0 {
+				size = s.FontSize
+			}
+			s.Font = bentotext.Font(s.FontName, size)
+		}
+	}
+	if s.Font == nil {
 		if s.FontName, s.FontSize, s.Font, err = parseFont(s.Attrs["font"]); err != nil {
 			return fmt.Errorf("error parsing font: %s", err)
 		}
@@ -86,20 +95,26 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing minWidth: %s", err)
 		}
 	}
-	if s.MaxWidth == 0 {
-		if s.MaxWidth, err = parseSize(s.Attrs["maxWidth"], s.Font); err != nil {
-			return fmt.Errorf("error parsing maxWidth: %s", err)
-		}
-	}
 	if s.MinHeight == 0 {
 		if s.MinHeight, err = parseSize(s.Attrs["minHeight"], s.Font); err != nil {
 			return fmt.Errorf("error parsing minHeight: %s", err)
 		}
 	}
+	if s.MaxWidth == 0 {
+		if s.MaxWidth, err = parseSize(s.Attrs["maxWidth"], s.Font); err != nil {
+			return fmt.Errorf("error parsing maxWidth: %s", err)
+		}
+	}
+	if s.MaxWidth != 0 && s.node.tag != "p" {
+		return fmt.Errorf("invalid tag %s: max width can only apply to a paragraph (p) tag", s.node.tag)
+	}
 	if s.MaxHeight == 0 {
 		if s.MaxHeight, err = parseSize(s.Attrs["maxHeight"], s.Font); err != nil {
 			return fmt.Errorf("error parsing maxHeight: %s", err)
 		}
+	}
+	if s.MaxHeight != 0 && s.node.tag != "p" {
+		return fmt.Errorf("invalid tag %s: max height can only apply to a paragraph (p) tag", s.node.tag)
 	}
 	if s.Color == nil {
 		if s.Color, err = parseColor(s.Attrs["color"]); err != nil {
@@ -324,37 +339,8 @@ func parseColor(spec string) (color.Color, error) {
 }
 
 func (n *node) styleSize() {
-	/*
-
-		textHeight := bounds.Dy()
-		metrics := n.style.Font.Metrics()
-		minHeight := metrics.Height.Round()
-		if textHeight < minHeight {
-			textHeight = minHeight
-		}
-		max(n.style.MinHeight, bounds.Dy())
-		if n.style.MaxHeight > 0 && n.style.MaxHeight < n.ContentHeight {
-			n.ContentHeight = n.style.MaxHeight
-		}
-	*/
 	if n.style == nil {
 		return
-	}
-	if n.style.Attrs["width"] == "100%" {
-		if n.parent == nil {
-			w, _ := ebiten.WindowSize()
-			n.fillWidth(w)
-		} else {
-			n.fillWidth(max(n.ContentWidth, n.parent.InnerWidth))
-		}
-	}
-	if n.style.Attrs["height"] == "100%" {
-		if n.parent == nil {
-			_, h := ebiten.WindowSize()
-			n.fillHeight(h)
-		} else {
-			n.fillHeight(max(n.ContentWidth, n.parent.InnerHeight))
-		}
 	}
 	if n.style.MinWidth > 0 {
 		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
@@ -362,9 +348,14 @@ func (n *node) styleSize() {
 	if n.style.MinHeight > 0 {
 		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
 	}
-	if n.style.Attrs["aspectRatio"] == "1:1" {
-		n.ContentWidth = max(n.ContentWidth, n.ContentHeight)
-		n.ContentHeight = max(n.ContentWidth, n.ContentHeight)
+	if n.tag == "p" {
+		textHeight := n.TextBounds.Dy()
+		metrics := n.style.Font.Metrics()
+		minHeight := metrics.Height.Round()
+		n.ContentHeight = max(textHeight, minHeight)
+	}
+	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
+		n.ContentHeight = n.style.MaxHeight
 	}
 	if n.style.Button != nil {
 		n.style.Button.rect = n.innerRect()

@@ -3,32 +3,44 @@ package main
 import (
 	"flag"
 	_ "image/png"
+	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-type Demo struct {
+var paragraphs []string
+
+func init() {
+	bs, err := ioutil.ReadFile("loomings.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	paragraphs = strings.Split(string(bs), "\n")
+}
+
+type Game struct {
 	ui bento.Box
 }
 
-func (d *Demo) Update() error {
+func (g *Game) Update() error {
 	var keys []ebiten.Key
 	keys = inpututil.AppendPressedKeys(keys)
-	if _, err := d.ui.Update(keys); err != nil {
+	if _, err := g.ui.Update(keys); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *Demo) Draw(screen *ebiten.Image) {
+func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Clear()
-	d.ui.Draw(screen)
+	g.ui.Draw(screen)
 }
 
-func (d *Demo) Layout(ow, oh int) (int, int) {
+func (g *Game) Layout(ow, oh int) (int, int) {
 	return ow, oh
 }
 
@@ -38,12 +50,11 @@ func main() {
 
 	ebiten.SetWindowSize(1024, 800)
 	ebiten.SetWindowTitle("Bento Demo")
-	ui, err := bento.Build(&TextDemo{})
+	ui, err := bento.Build(&Demo{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	d := &Demo{ui: ui}
-	if err := ebiten.RunGame(d); err != nil {
+	if err := ebiten.RunGame(&Game{ui: ui}); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -55,7 +54,7 @@ func (n *node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		case xml.EndElement:
 			return nil
 		case xml.CharData:
-			n.content = strings.TrimSpace(string(next.(xml.CharData)))
+			n.content = string(next.(xml.CharData))
 		case xml.ProcInst:
 			return fmt.Errorf("unsupported xml processing instruction (<?target inst?>)")
 		case xml.Directive:
