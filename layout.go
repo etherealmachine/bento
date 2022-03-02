@@ -138,44 +138,43 @@ func (n *node) space() (int, int) {
 }
 
 func (n *node) justify() {
-	/*
-		r := n.innerRect()
-		extents := make([]int, len(n.children))
-		for i, c := range n.children {
-			extents[i] = c.InnerWidth
-		}
-		offset := distribute(hspace, hj, extents)
-		for i, c := range n.children {
-			c.X = r.Min.X + offset[i]
-		}
-		for i, c := range n.children {
-			extents[i] = c.InnerHeight
-		}
-		//offset = distribute(vspace, vj, extents)
-		for _, c := range n.children {
-			c.Y = r.Min.Y // + offset[i]
-		}
-	*/
+	r := n.innerRect()
+	extents := make([]int, len(n.children))
+	for i, c := range n.children {
+		extents[i] = c.OuterHeight
+	}
+	_, vspace := n.space()
+	_, vj := n.style.justification()
+	offsets := distribute(vspace, vj, extents)
+	for i, c := range n.children {
+		c.Y = r.Min.Y + offsets[i]
+	}
+	for _, c := range n.children {
+		c.X = r.Min.X
+	}
 	for _, c := range n.children {
 		c.justify()
 	}
 }
 
 func distribute(space int, j Justification, extents []int) []int {
+	offsets := make([]int, len(extents))
 	switch j {
 	case Start:
-		return extents
 	case End:
-		return extents
 	case Center:
-		return extents
+		for i := range extents {
+			if i == 0 {
+				offsets[i] = space / 2
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1]
+			}
+		}
 	case Evenly:
-		return extents
 	case Around:
-		return extents
 	case Between:
-		return extents
 	default:
 		panic(fmt.Errorf("can't handle justification %s", j))
 	}
+	return offsets
 }

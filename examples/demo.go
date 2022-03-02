@@ -24,7 +24,7 @@ func (d *Demo) Next(_ string) {
 }
 
 func (d *Demo) Page1() bento.Box {
-	p := &Page1{Paragraphs: paragraphs}
+	p := &Page1{}
 	b, err := bento.Build(p)
 	if err != nil {
 		log.Fatal(err)

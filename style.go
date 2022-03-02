@@ -108,6 +108,19 @@ func (s *Style) padding() (int, int, int, int) {
 	return 0, 0, 0, 0
 }
 
+func (s *Style) justification() (Justification, Justification) {
+	hj, vj := Start, Start
+	if s != nil {
+		if s.HJust != "" {
+			hj = s.HJust
+		}
+		if s.VJust != "" {
+			vj = s.VJust
+		}
+	}
+	return hj, vj
+}
+
 // TODO
 func (s *Style) display() bool {
 	return true
@@ -116,6 +129,36 @@ func (s *Style) display() bool {
 // TODO
 func (s *Style) hidden() bool {
 	return false
+}
+
+func (n *node) styleSize() {
+	if n.style == nil {
+		return
+	}
+	if n.style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
+	}
+	if n.style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
+	}
+	if n.tag == "p" {
+		textHeight := n.TextBounds.Dy()
+		metrics := n.style.Font.Metrics()
+		minHeight := metrics.Height.Round()
+		n.ContentHeight = max(textHeight, minHeight)
+	}
+	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
+		n.ContentHeight = n.style.MaxHeight
+	}
+	if n.style.Button != nil {
+		n.style.Button.rect = n.innerRect()
+	}
+	if n.style.Scrollbar != nil {
+		inner := n.innerRect()
+		n.style.Scrollbar.x = inner.Max.X
+		n.style.Scrollbar.y = inner.Min.Y
+		n.style.Scrollbar.height = inner.Dy()
+	}
 }
 
 func (s *Style) parseAttributes() error {
@@ -448,36 +491,6 @@ func parseColor(spec string) (color.Color, error) {
 		return nil, err
 	}
 	return c, nil
-}
-
-func (n *node) styleSize() {
-	if n.style == nil {
-		return
-	}
-	if n.style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
-	}
-	if n.style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
-	}
-	if n.tag == "p" {
-		textHeight := n.TextBounds.Dy()
-		metrics := n.style.Font.Metrics()
-		minHeight := metrics.Height.Round()
-		n.ContentHeight = max(textHeight, minHeight)
-	}
-	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
-		n.ContentHeight = n.style.MaxHeight
-	}
-	if n.style.Button != nil {
-		n.style.Button.rect = n.innerRect()
-	}
-	if n.style.Scrollbar != nil {
-		inner := n.innerRect()
-		n.style.Scrollbar.x = inner.Max.X
-		n.style.Scrollbar.y = inner.Min.Y
-		n.style.Scrollbar.height = inner.Dy()
-	}
 }
 
 func parseSize(spec string, f font.Face) (int, error) {
