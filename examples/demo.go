@@ -32,6 +32,15 @@ func (d *Demo) Page1() bento.Box {
 	return b
 }
 
+func (d *Demo) Page2() bento.Box {
+	p := &Page2{Paragraphs: paragraphs}
+	b, err := bento.Build(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return b
+}
+
 func (d *Demo) UI() string {
 	return `<col grow="1" justify="center" border="frame.png 10 12 10 10 12 10">
 		<Page1 display="{{eq .CurrentPage 0}}" />

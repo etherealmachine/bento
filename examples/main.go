@@ -50,7 +50,7 @@ func main() {
 
 	ebiten.SetWindowSize(1024, 800)
 	ebiten.SetWindowTitle("Bento Demo")
-	ui, err := bento.Build(&Demo{})
+	ui, err := bento.Build(&Page1{Paragraphs: paragraphs})
 	if err != nil {
 		log.Fatal(err)
 	}

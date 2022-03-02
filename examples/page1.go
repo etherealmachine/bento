@@ -2,7 +2,6 @@ package main
 
 import (
 	"image/color"
-	"log"
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,8 +21,8 @@ func (p *Page1) handleClick(_ string) {
 	p.Clicks++
 }
 
-func (p *Page1) Next(_ string) {
-	log.Println("next!")
+func (p *Page1) Reset(_ string) {
+	p.Clicks = 0
 }
 
 func (p *Page1) Text() *bento.Style {
@@ -57,10 +56,10 @@ func (p *Page1) Button() *bento.Style {
 }
 
 func (p *Page1) UI() string {
-	return `<col grow="1" justify="center" border="frame.png 10 12 10 10 12 10">
-		<row flex="1">
+	return `<col grow="1" justify="center" border="frame.png 10">
+		<row grow="1">
 			<img bg="profile.png"/>
-			<p flex="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{index .Paragraphs 0}}</p>
+			<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{index .Paragraphs 0}}</p>
 		</row>
 		<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum</text>
 		<Text border="frame.png 10">
@@ -69,7 +68,7 @@ func (p *Page1) UI() string {
 		</Text>
 		<row>
 			<Button>Clicks: {{.Clicks}}</Button>
-			<button onClick="Next" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Next</button>
+			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>
 		</row>
 	</col>`
 }

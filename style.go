@@ -19,6 +19,38 @@ var (
 	sizeSpec = regexp.MustCompile(`(\d+)(em|px|%)`)
 )
 
+type Justification string
+
+const (
+	// The items are packed flush to each other toward the start edge of the alignment container in the main axis.
+	// [item1 item2              ]
+	Start = Justification("start")
+	// The items are packed flush to each other toward the end edge of the alignment container in the main axis.
+	// [              item1 item2]
+	End = Justification("end")
+	// The items are packed flush to each other toward the center of the alignment container along the main axis.
+	// [       item1 item2       ]
+	Center = Justification("center")
+	// The items are evenly distributed within the alignment container along the main axis.
+	// The spacing between each pair of adjacent items is the same.
+	// The first item is flush with the main-start edge, and the last item is flush with the main-end edge.
+	// [item1               item2]
+	Between = Justification("between")
+	// The items are evenly distributed within the alignment container along the main axis.
+	// The spacing between each pair of adjacent items is the same.
+	// The empty space before the first and after the last item equals half of the space between each pair of adjacent items.
+	// [   item1         item2   ]
+	Around = Justification("around")
+	// The items are evenly distributed within the alignment container along the main axis.
+	// The spacing between each pair of adjacent items, the main-start edge and the first item, and the main-end edge and the last item, are all exactly the same.
+	// [     item1     item2     ]
+	Evenly = Justification("evenly")
+)
+
+func (j Justification) Valid() bool {
+	return j == "start" || j == "end" || j == "center" || j == "between" || j == "around" || j == "evenly"
+}
+
 type Spacing struct {
 	Top, Right, Bottom, Left int `xml:",attr,omitempty"`
 }
@@ -35,6 +67,8 @@ type Style struct {
 	Background          *ebiten.Image
 	MinWidth, MinHeight int
 	MaxWidth, MaxHeight int
+	HJust, VJust        Justification
+	HGrow, VGrow        int
 	Margin, Padding     *Spacing
 	Color               color.Color
 	Hidden              bool
@@ -52,6 +86,36 @@ func (s *Style) adopt(node *node) {
 		}
 	}
 	s.node = node
+}
+
+func (s *Style) margin() (int, int, int, int) {
+	if s != nil {
+		m := s.Margin
+		if m != nil {
+			return m.Top, m.Right, m.Bottom, m.Left
+		}
+	}
+	return 0, 0, 0, 0
+}
+
+func (s *Style) padding() (int, int, int, int) {
+	if s != nil {
+		p := s.Padding
+		if p != nil {
+			return p.Top, p.Right, p.Bottom, p.Left
+		}
+	}
+	return 0, 0, 0, 0
+}
+
+// TODO
+func (s *Style) display() bool {
+	return true
+}
+
+// TODO
+func (s *Style) hidden() bool {
+	return false
 }
 
 func (s *Style) parseAttributes() error {
@@ -81,7 +145,7 @@ func (s *Style) parseAttributes() error {
 		}
 	}
 	if s.Background == nil {
-		if s.Background, err = s.loadImage(s.Attrs["bg"]); err != nil {
+		if s.Background, err = loadImage(s.Attrs["bg"]); err != nil {
 			return fmt.Errorf("error parsing bg: %s", err)
 		}
 	}
@@ -115,6 +179,16 @@ func (s *Style) parseAttributes() error {
 	}
 	if s.MaxHeight != 0 && s.node.tag != "p" {
 		return fmt.Errorf("invalid tag %s: max height can only apply to a paragraph (p) tag", s.node.tag)
+	}
+	if spec := s.Attrs["justify"]; spec != "" {
+		if s.HJust, s.VJust, err = parseJustification(spec); err != nil {
+			return fmt.Errorf("error parsing justification: %s", err)
+		}
+	}
+	if spec := s.Attrs["grow"]; spec != "" {
+		if s.HGrow, s.VGrow, err = parseGrow(spec); err != nil {
+			return fmt.Errorf("error parsing grow: %s", err)
+		}
 	}
 	if s.Color == nil {
 		if s.Color, err = parseColor(s.Attrs["color"]); err != nil {
@@ -200,7 +274,45 @@ func parseSpacing(spec string, font font.Face) (*Spacing, error) {
 	return nil, fmt.Errorf("invalid spacing spec %s", spec)
 }
 
-func (s *Style) loadImage(spec string) (*ebiten.Image, error) {
+func parseJustification(spec string) (Justification, Justification, error) {
+	if spec == "" {
+		return Start, Start, nil
+	}
+	justs := strings.Split(spec, " ")
+	var hj, vj Justification
+	if len(justs) == 1 {
+		hj = Justification(justs[0])
+		vj = hj
+	} else {
+		hj, vj = Justification(justs[0]), Justification(justs[1])
+	}
+	if !hj.Valid() {
+		return Start, Start, fmt.Errorf("invalid justification %s", hj)
+	}
+	if !vj.Valid() {
+		return Start, Start, fmt.Errorf("invalid justification %s", vj)
+	}
+	return hj, vj, nil
+}
+
+func parseGrow(spec string) (int, int, error) {
+	if spec == "" {
+		return 0, 0, nil
+	}
+	a := strings.Split(spec, " ")
+	var hg, vg int
+	var err error
+	hg, err = strconv.Atoi(a[0])
+	vg = hg
+	if err == nil && len(a) == 2 {
+		vg, err = strconv.Atoi(a[1])
+	} else if len(a) > 2 {
+		return 0, 0, fmt.Errorf("too many parameters for grow, expected at most 2: %s", spec)
+	}
+	return hg, vg, err
+}
+
+func loadImage(spec string) (*ebiten.Image, error) {
 	if spec == "" {
 		return nil, nil
 	}
@@ -366,36 +478,6 @@ func (n *node) styleSize() {
 		n.style.Scrollbar.y = inner.Min.Y
 		n.style.Scrollbar.height = inner.Dy()
 	}
-}
-
-func (s *Style) margin() (int, int, int, int) {
-	if s != nil {
-		m := s.Margin
-		if m != nil {
-			return m.Top, m.Right, m.Bottom, m.Left
-		}
-	}
-	return 0, 0, 0, 0
-}
-
-func (s *Style) padding() (int, int, int, int) {
-	if s != nil {
-		p := s.Padding
-		if p != nil {
-			return p.Top, p.Right, p.Bottom, p.Left
-		}
-	}
-	return 0, 0, 0, 0
-}
-
-// TODO
-func (s *Style) display() bool {
-	return true
-}
-
-// TODO
-func (s *Style) hidden() bool {
-	return false
 }
 
 func parseSize(spec string, f font.Face) (int, error) {

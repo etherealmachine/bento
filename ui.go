@@ -112,8 +112,14 @@ func Build(c Component) (Box, error) {
 				return fmt.Errorf("%s: failed to find method for tag %s", reflect.TypeOf(n.component), n.tag)
 			}
 			res := m.Call(nil)
-			n.style = res[0].Interface().(*Style)
-			n.tag = n.style.Extends
+			if style, ok := res[0].Interface().(*Style); ok {
+				n.style = style
+				n.tag = style.Extends
+			}
+			if box, ok := res[0].Interface().(Box); ok {
+				// TODO
+				log.Println(box)
+			}
 		}
 		if n.style == nil {
 			n.style = new(Style)

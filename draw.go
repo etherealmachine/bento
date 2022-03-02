@@ -11,8 +11,9 @@ import (
 
 func (n *node) Draw(img *ebiten.Image) {
 	if n.parent == nil {
-		n.updateSize()
-		n.doLayout()
+		n.size()
+		n.grow()
+		n.justify()
 	}
 	if n.style.hidden() || !n.style.display() {
 		return

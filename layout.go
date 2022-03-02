@@ -3,9 +3,9 @@ package bento
 import (
 	"fmt"
 	"image"
-	"strings"
 
 	"github.com/etherealmachine/bento/text"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (n *node) Bounds() image.Rectangle {
@@ -27,7 +27,7 @@ func (n *node) contentRect() image.Rectangle {
 	return image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
 }
 
-func (n *node) updateSize() {
+func (n *node) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
 	if !n.style.display() {
@@ -53,11 +53,8 @@ func (n *node) updateSize() {
 		n.ContentHeight = bounds.Dy()
 	}
 	for _, c := range n.children {
-		c.updateSize()
+		c.size()
 		switch n.tag {
-		case "grid":
-			n.ContentWidth = max(n.ContentWidth, c.OuterWidth)
-			n.ContentHeight += c.OuterHeight
 		case "row":
 			n.ContentWidth += c.OuterWidth
 			n.ContentHeight = max(n.ContentHeight, c.OuterHeight)
@@ -78,6 +75,29 @@ func (n *node) updateSize() {
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
+func (n *node) grow() {
+	w, h := ebiten.WindowSize()
+	if n.style != nil {
+		if n.style.HGrow > 0 {
+			if n.parent == nil {
+				n.fillWidth(w)
+			} else {
+				// TODO
+			}
+		}
+		if n.style.VGrow > 0 {
+			if n.parent == nil {
+				n.fillHeight(h)
+			} else {
+				// TODO
+			}
+		}
+	}
+	for _, c := range n.children {
+		c.grow()
+	}
+}
+
 func (n *node) fillWidth(w int) {
 	_, mr, _, ml := n.style.margin()
 	_, pr, _, pl := n.style.padding()
@@ -94,22 +114,7 @@ func (n *node) fillHeight(h int) {
 	n.ContentHeight = n.InnerHeight - pt - pb
 }
 
-func (n *node) doLayout() {
-	hj, vj := Start, Start
-	if n.style != nil && n.style.Attrs["justify"] != "" {
-		justs := strings.Split(n.style.Attrs["justify"], " ")
-		if len(justs) == 1 {
-			hj = ParseJustification(justs[0])
-			vj = hj
-		} else {
-			hj, vj = ParseJustification(justs[0]), ParseJustification(justs[1])
-		}
-	}
-	dir := n.tag
-	if dir == "grid" {
-		dir = "col"
-	}
-
+func (n *node) space() (int, int) {
 	maxChildWidth := 0
 	maxChildHeight := 0
 	totalChildWidths := 0
@@ -122,129 +127,55 @@ func (n *node) doLayout() {
 	}
 
 	var hspace, vspace int
-	if dir == "row" {
+	if n.tag == "row" {
 		hspace = n.InnerWidth - totalChildWidths
 		vspace = n.InnerHeight - maxChildHeight
 	} else {
 		hspace = n.InnerWidth - maxChildWidth
 		vspace = n.InnerHeight - totalChildHeights
 	}
+	return hspace, vspace
+}
 
-	r := n.innerRect()
-
-	switch hj {
-	case Start:
+func (n *node) justify() {
+	/*
+		r := n.innerRect()
+		extents := make([]int, len(n.children))
 		for i, c := range n.children {
-			offset := r.Min.X
-			if i > 0 && dir == "row" {
-				prev := n.children[i-1]
-				offset = prev.X + prev.OuterWidth
-			}
-			c.X = offset
+			extents[i] = c.InnerWidth
 		}
-	case End:
+		offset := distribute(hspace, hj, extents)
 		for i, c := range n.children {
-			offset := r.Min.X + hspace
-			if i > 0 && dir == "row" {
-				prev := n.children[i-1]
-				offset = prev.X + prev.OuterWidth + hspace
-			}
-			c.X = offset
+			c.X = r.Min.X + offset[i]
 		}
-	case Center:
 		for i, c := range n.children {
-			offset := r.Min.X + hspace/2
-			if i > 0 && dir == "row" {
-				prev := n.children[i-1]
-				offset = prev.X + prev.OuterWidth
-			}
-			c.X = offset
+			extents[i] = c.InnerHeight
 		}
-	case Evenly:
-		gap := hspace / (len(n.children) + 1)
-		for i, c := range n.children {
-			offset := r.Min.X + gap
-			if i > 0 && dir == "row" {
-				prev := n.children[i-1]
-				offset = prev.X + prev.OuterWidth + gap
-			}
-			c.X = offset
+		//offset = distribute(vspace, vj, extents)
+		for _, c := range n.children {
+			c.Y = r.Min.Y // + offset[i]
 		}
-		/*
-				TODO: between and around
-			case Stretch:
-				w := n.InnerWidth
-				if dir == "row" {
-					w = n.InnerWidth / len(n.children)
-				}
-				for i, c := range n.children {
-					c.X = r.Min.X
-					if dir == "row" {
-						c.X += w * i
-					}
-					c.fillWidth(w)
-				}
-		*/
-	default:
-		panic(fmt.Errorf("can't handle horizontal justification %d", hj))
-	}
-	switch vj {
-	case Start:
-		for i, c := range n.children {
-			offset := r.Min.Y
-			if i > 0 && dir == "col" {
-				prev := n.children[i-1]
-				offset = prev.Y + prev.OuterHeight
-			}
-			c.Y = offset
-		}
-	case End:
-		for i, c := range n.children {
-			offset := r.Min.Y + vspace
-			if i > 0 && dir == "col" {
-				prev := n.children[i-1]
-				offset = prev.Y + prev.OuterHeight + vspace
-			}
-			c.Y = offset
-		}
-	case Center:
-		for i, c := range n.children {
-			offset := r.Min.Y + vspace/2
-			if i > 0 && dir == "col" {
-				prev := n.children[i-1]
-				offset = prev.Y + prev.OuterHeight
-			}
-			c.Y = offset
-		}
-	case Evenly:
-		gap := vspace / (len(n.children) + 1)
-		for i, c := range n.children {
-			offset := r.Min.Y + gap
-			if i > 0 && dir == "col" {
-				prev := n.children[i-1]
-				offset = prev.Y + prev.OuterHeight + gap
-			}
-			c.Y = offset
-		}
-		/*
-				 TODO: between and around
-			case Stretch:
-				h := n.InnerHeight
-				if dir == "col" {
-					h = n.InnerHeight / len(n.children)
-				}
-				for i, c := range n.children {
-					c.Y = r.Min.Y
-					if dir == "col" {
-						c.Y += h * i
-					}
-					c.fillHeight(h)
-				}
-		*/
-	default:
-		panic(fmt.Errorf("can't handle vertical justification %d", vj))
-	}
+	*/
 	for _, c := range n.children {
-		c.doLayout()
+		c.justify()
+	}
+}
+
+func distribute(space int, j Justification, extents []int) []int {
+	switch j {
+	case Start:
+		return extents
+	case End:
+		return extents
+	case Center:
+		return extents
+	case Evenly:
+		return extents
+	case Around:
+		return extents
+	case Between:
+		return extents
+	default:
+		panic(fmt.Errorf("can't handle justification %s", j))
 	}
 }
