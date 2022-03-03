@@ -86,12 +86,18 @@ func (n *Box) grow() {
 	}
 	hgrow, vgrow := 0, 0
 	for _, c := range n.children {
+		if !c.style.display() {
+			continue
+		}
 		hg, vg := c.style.growth()
 		hgrow += hg
 		vgrow += vg
 	}
 	hspace, vspace := n.space()
 	for _, c := range n.children {
+		if !c.style.display() {
+			continue
+		}
 		hg, vg := c.style.growth()
 		if hg > 0 {
 			if n.tag == "row" {
@@ -111,6 +117,9 @@ func (n *Box) grow() {
 		}
 	}
 	for _, c := range n.children {
+		if !c.style.display() {
+			continue
+		}
 		c.grow()
 	}
 }

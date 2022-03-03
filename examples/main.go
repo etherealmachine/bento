@@ -48,7 +48,7 @@ func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	ebiten.SetWindowSize(1024, 800)
+	ebiten.SetWindowSize(1280, 900)
 	ebiten.SetWindowTitle("Bento Demo")
 	ui, err := bento.Build(&Demo{})
 	if err != nil {

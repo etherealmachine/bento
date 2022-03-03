@@ -111,7 +111,9 @@ func Build(c Component) (*Box, error) {
 				n.tag = style.Extends
 			}
 			if box, ok := res[0].Interface().(*Box); ok {
+				n.tag = "col"
 				n.children = append(n.children, box)
+				box.parent = n
 			}
 		}
 		if n.style == nil {

@@ -42,10 +42,10 @@ func (d *Demo) Page2() *bento.Box {
 }
 
 func (d *Demo) UI() string {
-	return `<col grow="1" justify="center" border="frame.png 10 12 10 10 12 10">
+	return `<col grow="1" border="frame.png 10 12 10 10 12 10">
 		<Page1 grow="1" display="{{eq .CurrentPage 0}}"/>
 		<Page2 grow="1" display="{{eq .CurrentPage 1}}"/>
-		<row justify="between">
+		<row grow="1 0" justify="between">
 			<button onClick="Prev" color="#ffffff" margin="4px" padding="12px" btn="button.png 6" disabled="{{eq .CurrentPage 0}}">Prev</button>
 			<button onClick="Next" color="#ffffff" margin="4px" padding="12px" btn="button.png 6" disabled="{{eq .CurrentPage 1}}">Next</button>
 		</row>

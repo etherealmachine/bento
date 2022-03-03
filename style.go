@@ -3,6 +3,7 @@ package bento
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -250,8 +251,13 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing button: %s", err)
 		}
 		if s.Button != nil {
+			log.Printf("creating button %s for %s", s.node.content, reflect.TypeOf(s.node.component))
 			s.Button.onClick = func(id string) {
 				m := reflect.ValueOf(s.node.component).MethodByName(s.Attrs["onClick"])
+				if !m.IsValid() {
+					log.Println(reflect.TypeOf(s.node.component))
+					log.Println(reflect.TypeOf(s.node.context))
+				}
 				m.Call([]reflect.Value{reflect.ValueOf(id)})
 			}
 		}

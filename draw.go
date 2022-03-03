@@ -1,6 +1,7 @@
 package bento
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -62,7 +63,10 @@ func (n *Box) Draw(img *ebiten.Image) {
 	}
 	if n.debug {
 		// Annotate
-		text.DrawString(img, n.tag, text.Font("mono", 16), color.Black, outer.Add(image.Pt(4, 4)), text.Start, text.Start)
+		text.DrawString(
+			img,
+			fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight),
+			text.Font("mono", 10), color.Black, outer.Add(image.Pt(4, 4)), text.Start, text.Start)
 	}
 	for _, c := range n.children {
 		c.Draw(img)
