@@ -3,31 +3,32 @@ package bento
 import (
 	"fmt"
 	"image"
+	"math"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func (n *node) Bounds() image.Rectangle {
+func (n *Box) Bounds() image.Rectangle {
 	return n.outerRect()
 }
 
-func (n *node) outerRect() image.Rectangle {
+func (n *Box) outerRect() image.Rectangle {
 	return image.Rect(n.X, n.Y, n.X+n.OuterWidth, n.Y+n.OuterHeight)
 }
 
-func (n *node) innerRect() image.Rectangle {
+func (n *Box) innerRect() image.Rectangle {
 	mt, _, _, ml := n.style.margin()
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
-func (n *node) contentRect() image.Rectangle {
+func (n *Box) contentRect() image.Rectangle {
 	mt, _, _, ml := n.style.margin()
 	pt, _, _, pl := n.style.padding()
 	return image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
 }
 
-func (n *node) size() {
+func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
 	if !n.style.display() {
@@ -47,8 +48,8 @@ func (n *node) size() {
 		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
-	} else if n.tag == "img" {
-		bounds := n.style.Background.Bounds()
+	} else if n.tag == "img" && n.style.Image != nil {
+		bounds := n.style.Image.Bounds()
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	}
@@ -75,21 +76,37 @@ func (n *node) size() {
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
-func (n *node) grow() {
+func (n *Box) grow() {
 	w, h := ebiten.WindowSize()
-	if n.style != nil {
-		if n.style.HGrow > 0 {
-			if n.parent == nil {
-				n.fillWidth(w)
+	if n.style != nil && n.style.HGrow > 0 && n.parent == nil {
+		n.fillWidth(w)
+	}
+	if n.style != nil && n.style.VGrow > 0 && n.parent == nil {
+		n.fillHeight(h)
+	}
+	hgrow, vgrow := 0, 0
+	for _, c := range n.children {
+		hg, vg := c.style.growth()
+		hgrow += hg
+		vgrow += vg
+	}
+	hspace, vspace := n.space()
+	for _, c := range n.children {
+		hg, vg := c.style.growth()
+		if hg > 0 {
+			if n.tag == "row" {
+				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
+				c.fillWidth(c.ContentWidth + halloc)
 			} else {
-				// TODO
+				c.fillWidth(n.OuterWidth)
 			}
 		}
-		if n.style.VGrow > 0 {
-			if n.parent == nil {
-				n.fillHeight(h)
+		if vg > 0 && vgrow > 0 {
+			if n.tag == "col" {
+				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
+				c.fillHeight(c.ContentHeight + valloc)
 			} else {
-				// TODO
+				c.fillHeight(c.OuterHeight)
 			}
 		}
 	}
@@ -98,7 +115,7 @@ func (n *node) grow() {
 	}
 }
 
-func (n *node) fillWidth(w int) {
+func (n *Box) fillWidth(w int) {
 	_, mr, _, ml := n.style.margin()
 	_, pr, _, pl := n.style.padding()
 	n.OuterWidth = w
@@ -106,7 +123,7 @@ func (n *node) fillWidth(w int) {
 	n.ContentWidth = n.InnerWidth - pr - pl
 }
 
-func (n *node) fillHeight(h int) {
+func (n *Box) fillHeight(h int) {
 	mt, _, mb, _ := n.style.margin()
 	pt, _, pb, _ := n.style.padding()
 	n.OuterHeight = h
@@ -114,7 +131,7 @@ func (n *node) fillHeight(h int) {
 	n.ContentHeight = n.InnerHeight - pt - pb
 }
 
-func (n *node) space() (int, int) {
+func (n *Box) space() (int, int) {
 	maxChildWidth := 0
 	maxChildHeight := 0
 	totalChildWidths := 0
@@ -137,42 +154,94 @@ func (n *node) space() (int, int) {
 	return hspace, vspace
 }
 
-func (n *node) justify() {
+func (n *Box) justify() {
 	r := n.innerRect()
+	hspace, vspace := n.space()
+	hj, vj := n.style.justification()
+	for _, c := range n.children {
+		c.X = r.Min.X
+		c.Y = r.Min.Y
+	}
 	extents := make([]int, len(n.children))
+	for i, c := range n.children {
+		extents[i] = c.OuterWidth
+	}
+	offsets := distribute(hspace, hj, extents, n.tag == "row")
+	for i, c := range n.children {
+		c.X += offsets[i]
+	}
 	for i, c := range n.children {
 		extents[i] = c.OuterHeight
 	}
-	_, vspace := n.space()
-	_, vj := n.style.justification()
-	offsets := distribute(vspace, vj, extents)
+	offsets = distribute(vspace, vj, extents, n.tag == "col")
 	for i, c := range n.children {
-		c.Y = r.Min.Y + offsets[i]
-	}
-	for _, c := range n.children {
-		c.X = r.Min.X
+		c.Y += offsets[i]
 	}
 	for _, c := range n.children {
 		c.justify()
 	}
 }
 
-func distribute(space int, j Justification, extents []int) []int {
+func distribute(space int, j Justification, extents []int, mainAxis bool) []int {
 	offsets := make([]int, len(extents))
 	switch j {
 	case Start:
+		for i := range extents {
+			if i == 0 || !mainAxis {
+				offsets[i] = 0
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1]
+			}
+		}
 	case End:
+		for i := range extents {
+			if i == 0 || !mainAxis {
+				offsets[i] = space
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1]
+			}
+		}
 	case Center:
 		for i := range extents {
-			if i == 0 {
+			if i == 0 || !mainAxis {
 				offsets[i] = space / 2
 			} else {
 				offsets[i] = offsets[i-1] + extents[i-1]
 			}
 		}
 	case Evenly:
+		spacing := int(math.Floor(float64(space) / float64(len(extents)+1)))
+		for i := range extents {
+			if !mainAxis {
+				offsets[i] = space / 2
+			} else if i == 0 {
+				offsets[i] = spacing
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+			}
+		}
 	case Around:
+		spacing := int(math.Floor(float64(space) / float64(len(extents))))
+		for i := range extents {
+			if !mainAxis {
+				offsets[i] = space / 2
+			} else if i == 0 {
+				offsets[i] = int(math.Floor(float64(spacing) / 2))
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+			}
+		}
 	case Between:
+		spacing := int(math.Floor(float64(space) / float64(len(extents)-1)))
+		for i := range extents {
+			if !mainAxis {
+				offsets[i] = space / 2
+			} else if i == 0 {
+				offsets[i] = 0
+			} else {
+				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+			}
+		}
 	default:
 		panic(fmt.Errorf("can't handle justification %s", j))
 	}

@@ -25,21 +25,15 @@ type Component interface {
 	OnKeyDown(key ebiten.Key) bool
 }
 
-type Box interface {
-	Update(keys []ebiten.Key) ([]ebiten.Key, error)
-	Draw(img *ebiten.Image)
-	Bounds() image.Rectangle
-}
-
-type node struct {
+type Box struct {
 	tag      string
-	children []*node
+	children []*Box
 	style    *Style
 	layout
-	parent      *node
+	parent      *Box
 	component   Component
 	context     interface{}
-	repeat      *node
+	repeat      *Box
 	debug       bool
 	attrs       map[string]string
 	attrTmpls   map[string]*template.Template
@@ -48,7 +42,7 @@ type node struct {
 	buffer      *ebiten.Image
 }
 
-func (n *node) clone(parent *node) *node {
+func (n *Box) clone(parent *Box) *Box {
 	attrs := make(map[string]string)
 	for k, v := range n.attrs {
 		attrs[k] = v
@@ -56,7 +50,7 @@ func (n *node) clone(parent *node) *node {
 	if parent == nil {
 		parent = n.parent
 	}
-	clone := &node{
+	clone := &Box{
 		tag:         n.tag,
 		parent:      parent,
 		attrs:       attrs,
@@ -67,7 +61,7 @@ func (n *node) clone(parent *node) *node {
 		content:     n.content,
 		contentTmpl: n.contentTmpl,
 	}
-	clone.children = make([]*node, len(n.children))
+	clone.children = make([]*Box, len(n.children))
 	for i, c := range n.children {
 		clone.children[i] = c.clone(clone)
 	}
@@ -82,7 +76,7 @@ type layout struct {
 	TextBounds                  *image.Rectangle
 }
 
-func (n *node) visit(f func(n *node) error) error {
+func (n *Box) visit(f func(n *Box) error) error {
 	if err := f(n); err != nil {
 		return err
 	}
@@ -94,14 +88,14 @@ func (n *node) visit(f func(n *node) error) error {
 	return nil
 }
 
-func Build(c Component) (Box, error) {
-	root := &node{}
+func Build(c Component) (*Box, error) {
+	root := &Box{}
 	root.component = c
 	root.context = c
 	if err := xml.Unmarshal([]byte(c.UI()), root); err != nil {
 		return nil, err
 	}
-	return root, root.visit(func(n *node) error {
+	return root, root.visit(func(n *Box) error {
 		n.component = c
 		if n.context == nil {
 			n.context = n.parent.context
@@ -116,9 +110,8 @@ func Build(c Component) (Box, error) {
 				n.style = style
 				n.tag = style.Extends
 			}
-			if box, ok := res[0].Interface().(Box); ok {
-				// TODO
-				log.Println(box)
+			if box, ok := res[0].Interface().(*Box); ok {
+				n.children = append(n.children, box)
 			}
 		}
 		if n.style == nil {
@@ -151,7 +144,7 @@ func Build(c Component) (Box, error) {
 		if repeat := n.attrs["repeat"]; repeat != "" {
 			n.repeat = n.children[0]
 			v := reflect.ValueOf(n.context).Elem().FieldByName(repeat)
-			n.children = make([]*node, v.Len())
+			n.children = make([]*Box, v.Len())
 			for i := 0; i < v.Len(); i++ {
 				val := v.Index(i)
 				clone := n.repeat.clone(nil)
@@ -167,14 +160,14 @@ func Build(c Component) (Box, error) {
 	})
 }
 
-func (n *node) path() string {
+func (n *Box) path() string {
 	if n.parent == nil {
 		return n.tag
 	}
 	return n.parent.path() + "->" + n.tag
 }
 
-func (n *node) templateContent() string {
+func (n *Box) templateContent() string {
 	if n.contentTmpl != nil {
 		buf := new(bytes.Buffer)
 		if err := n.contentTmpl.Execute(buf, n.context); err != nil {
@@ -189,7 +182,7 @@ func (n *node) templateContent() string {
 	return n.content
 }
 
-func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	if len(keys) == 0 {
 		for _, k := range keys {
 			if inpututil.IsKeyJustPressed(k) {
@@ -204,7 +197,7 @@ func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	}
 	var err error
 	if btn := n.style.Button; btn != nil {
-		btn.node = n
+		btn.box = n
 		keys, err = btn.Update(keys)
 		if err != nil {
 			return nil, err
@@ -225,7 +218,7 @@ func (n *node) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	return keys, nil
 }
 
-func (n *node) templateAttr(attr string, def bool) bool {
+func (n *Box) templateAttr(attr string, def bool) bool {
 	if v := n.attrs[attr]; v != "" {
 		if tmpl := n.attrTmpls[attr]; tmpl != nil {
 			buf := new(bytes.Buffer)
@@ -245,7 +238,7 @@ func (n *node) templateAttr(attr string, def bool) bool {
 	return def
 }
 
-func (n *node) toggleDebug() {
+func (n *Box) toggleDebug() {
 	n.debug = !n.debug
 }
 

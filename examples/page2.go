@@ -57,8 +57,9 @@ func (p *Page2) Button() *bento.Style {
 
 func (p *Page2) UI() string {
 	return `<col grow="1" justify="center" border="frame.png 10">
+		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
 		<row grow="1">
-			<img bg="profile.png"/>
+			<img src="profile.png"/>
 			<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{index .Paragraphs 0}}</p>
 		</row>
 		<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum</text>

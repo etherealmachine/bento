@@ -9,14 +9,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-func (n *node) Draw(img *ebiten.Image) {
+func (n *Box) Draw(img *ebiten.Image) {
+	if n.style.hidden() || !n.style.display() {
+		return
+	}
 	if n.parent == nil {
 		n.size()
 		n.grow()
 		n.justify()
-	}
-	if n.style.hidden() || !n.style.display() {
-		return
 	}
 	content := n.contentRect()
 	inner := n.innerRect()
@@ -58,7 +58,7 @@ func (n *node) Draw(img *ebiten.Image) {
 	case "img":
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
-		img.DrawImage(n.style.Background, op)
+		img.DrawImage(n.style.Image, op)
 	}
 	if n.debug {
 		// Annotate

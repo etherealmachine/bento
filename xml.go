@@ -19,7 +19,7 @@ var allowedTags = []string{
 	"img",
 }
 
-func (n *node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	n.tag = start.Name.Local
 	allowed := false
 	for _, tag := range allowedTags {
@@ -45,7 +45,7 @@ func (n *node) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 		switch next.(type) {
 		case xml.StartElement:
-			child := &node{}
+			child := &Box{}
 			if err := child.UnmarshalXML(d, next.(xml.StartElement)); err != nil {
 				return err
 			}

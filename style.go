@@ -32,19 +32,19 @@ const (
 	// [       item1 item2       ]
 	Center = Justification("center")
 	// The items are evenly distributed within the alignment container along the main axis.
-	// The spacing between each pair of adjacent items is the same.
-	// The first item is flush with the main-start edge, and the last item is flush with the main-end edge.
-	// [item1               item2]
-	Between = Justification("between")
+	// The spacing between each pair of adjacent items, the main-start edge and the first item, and the main-end edge and the last item, are all exactly the same.
+	// [     item1     item2     ]
+	Evenly = Justification("evenly")
 	// The items are evenly distributed within the alignment container along the main axis.
 	// The spacing between each pair of adjacent items is the same.
 	// The empty space before the first and after the last item equals half of the space between each pair of adjacent items.
 	// [   item1         item2   ]
 	Around = Justification("around")
 	// The items are evenly distributed within the alignment container along the main axis.
-	// The spacing between each pair of adjacent items, the main-start edge and the first item, and the main-end edge and the last item, are all exactly the same.
-	// [     item1     item2     ]
-	Evenly = Justification("evenly")
+	// The spacing between each pair of adjacent items is the same.
+	// The first item is flush with the main-start edge, and the last item is flush with the main-end edge.
+	// [item1               item2]
+	Between = Justification("between")
 )
 
 func (j Justification) Valid() bool {
@@ -64,7 +64,7 @@ type Style struct {
 	Border              *NineSlice
 	Button              *Button
 	Scrollbar           *Scrollbar
-	Background          *ebiten.Image
+	Image               *ebiten.Image
 	MinWidth, MinHeight int
 	MaxWidth, MaxHeight int
 	HJust, VJust        Justification
@@ -73,10 +73,10 @@ type Style struct {
 	Color               color.Color
 	Hidden              bool
 	Display             bool
-	node                *node
+	node                *Box
 }
 
-func (s *Style) adopt(node *node) {
+func (s *Style) adopt(node *Box) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
@@ -121,17 +121,24 @@ func (s *Style) justification() (Justification, Justification) {
 	return hj, vj
 }
 
-// TODO
+func (s *Style) growth() (int, int) {
+	hg, vg := 0, 0
+	if s != nil {
+		hg = s.HGrow
+		vg = s.VGrow
+	}
+	return hg, vg
+}
+
 func (s *Style) display() bool {
-	return true
+	return s.node.templateAttr("display", true)
 }
 
-// TODO
 func (s *Style) hidden() bool {
-	return false
+	return s.node.templateAttr("hidden", false)
 }
 
-func (n *node) styleSize() {
+func (n *Box) styleSize() {
 	if n.style == nil {
 		return
 	}
@@ -187,9 +194,9 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing padding: %s", err)
 		}
 	}
-	if s.Background == nil {
-		if s.Background, err = loadImage(s.Attrs["bg"]); err != nil {
-			return fmt.Errorf("error parsing bg: %s", err)
+	if s.Image == nil {
+		if s.Image, err = loadImage(s.Attrs["src"]); err != nil {
+			return fmt.Errorf("error parsing image src: %s", err)
 		}
 	}
 	if s.Border == nil {
