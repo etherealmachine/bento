@@ -96,7 +96,9 @@ func Build(c Component) (*Box, error) {
 		return nil, err
 	}
 	return root, root.visit(func(n *Box) error {
-		n.component = c
+		if n.component == nil {
+			n.component = n.parent.component
+		}
 		if n.context == nil {
 			n.context = n.parent.context
 		}
