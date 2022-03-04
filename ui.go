@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 	"text/template"
@@ -198,6 +199,7 @@ func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
 		n.toggleDebug()
+		n.dump()
 	}
 	var err error
 	if btn := n.style.Button; btn != nil {
@@ -244,6 +246,16 @@ func (n *Box) templateAttr(attr string, def bool) bool {
 
 func (n *Box) toggleDebug() {
 	n.debug = !n.debug
+}
+
+func (n *Box) dump() {
+	if !n.style.display() || n.style.hidden() {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "%s: (%d,%d) %dx%d\n", n.path(), n.X, n.Y, n.OuterWidth, n.OuterHeight)
+	for _, c := range n.children {
+		c.dump()
+	}
 }
 
 func max(a, b int) int {

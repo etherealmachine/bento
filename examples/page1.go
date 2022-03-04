@@ -37,8 +37,41 @@ func (p *Page1) UI() string {
 		</row>
 		<row grow="1" justify="between center">
 			<text font="RobotoMono 20" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum A</text>
-			<text font="RobotoMono 20" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum B</text>
+			<text font="RobotoMono 20" color="#ffffff" margin="4px" padding="12px">Lorem ipsum B</text>
 			<text font="RobotoMono 20" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum C</text>
+		</row>
+		<row grow="1" justify="start start" margin="0 0 0 48px">
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">a</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">b</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">c</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">A</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">B</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">C</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">1</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">2</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">3</text>
+		</row>
+		<row grow="1" justify="start center" margin="0 0 0 48px">
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">a</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">b</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">c</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">A</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">B</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">C</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">1</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">2</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">3</text>
+		</row>
+		<row grow="1" justify="start end" margin="0 0 0 48px">
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">a</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">b</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">c</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">A</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">B</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">C</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">1</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">2</text>
+			<text font="RobotoMono 20" color="#ffffff" padding="8px">3</text>
 		</row>
 		<row grow="1" justify="end end">
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum</text>

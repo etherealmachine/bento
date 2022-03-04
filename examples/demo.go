@@ -42,7 +42,7 @@ func (d *Demo) Page2() *bento.Box {
 }
 
 func (d *Demo) UI() string {
-	return `<col grow="1" border="frame.png 10 12 10 10 12 10">
+	return `<col grow="1" border="frame.png 10">
 		<Page1 grow="1" display="{{eq .CurrentPage 0}}"/>
 		<Page2 grow="1" display="{{eq .CurrentPage 1}}"/>
 		<row grow="1 0" justify="between">

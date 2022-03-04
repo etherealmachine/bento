@@ -171,88 +171,92 @@ func (n *Box) justify() {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 	}
-	extents := make([]int, len(n.children))
+	extents := make([][2]int, len(n.children))
 	for i, c := range n.children {
-		extents[i] = c.OuterWidth
+		if n.tag == "row" {
+			extents[i][0] = c.OuterWidth
+			extents[i][1] = c.OuterHeight
+		} else {
+			extents[i][0] = c.OuterHeight
+			extents[i][1] = c.OuterWidth
+		}
 	}
-	offsets := distribute(hspace, hj, extents, n.tag == "row")
-	for i, c := range n.children {
-		c.X += offsets[i]
+	var offsets [][2]int
+	if n.tag == "row" {
+		offsets = distribute(hspace, n.InnerHeight, hj, vj, extents)
+	} else {
+		offsets = distribute(vspace, n.InnerWidth, vj, hj, extents)
 	}
 	for i, c := range n.children {
-		extents[i] = c.OuterHeight
-	}
-	offsets = distribute(vspace, vj, extents, n.tag == "col")
-	for i, c := range n.children {
-		c.Y += offsets[i]
+		if n.tag == "row" {
+			c.X += offsets[i][0]
+			c.Y += offsets[i][1]
+		} else {
+			c.Y += offsets[i][0]
+			c.X += offsets[i][1]
+		}
 	}
 	for _, c := range n.children {
 		c.justify()
 	}
 }
 
-func distribute(space int, j Justification, extents []int, mainAxis bool) []int {
-	offsets := make([]int, len(extents))
-	switch j {
-	case Start:
-		for i := range extents {
-			if i == 0 || !mainAxis {
-				offsets[i] = 0
+func distribute(mainspace, crossspace int, mainj, crossj Justification, extents [][2]int) [][2]int {
+	offsets := make([][2]int, len(extents))
+	for i := range extents {
+		switch mainj {
+		case Start:
+			if i == 0 {
+				offsets[i][0] = 0
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1]
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0]
 			}
-		}
-	case End:
-		for i := range extents {
-			if i == 0 || !mainAxis {
-				offsets[i] = space
+		case End:
+			if i == 0 {
+				offsets[i][0] = mainspace
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1]
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0]
 			}
-		}
-	case Center:
-		for i := range extents {
-			if i == 0 || !mainAxis {
-				offsets[i] = space / 2
+		case Center:
+			if i == 0 {
+				offsets[i][0] = mainspace / 2
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1]
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0]
 			}
-		}
-	case Evenly:
-		spacing := int(math.Floor(float64(space) / float64(len(extents)+1)))
-		for i := range extents {
-			if !mainAxis {
-				offsets[i] = space / 2
-			} else if i == 0 {
-				offsets[i] = spacing
+		case Evenly:
+			spacing := int(math.Floor(float64(mainspace) / float64(len(extents)+1)))
+			if i == 0 {
+				offsets[i][0] = spacing
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0] + spacing
 			}
-		}
-	case Around:
-		spacing := int(math.Floor(float64(space) / float64(len(extents))))
-		for i := range extents {
-			if !mainAxis {
-				offsets[i] = space / 2
-			} else if i == 0 {
-				offsets[i] = int(math.Floor(float64(spacing) / 2))
+		case Around:
+			spacing := int(math.Floor(float64(mainspace) / float64(len(extents))))
+			if i == 0 {
+				offsets[i][0] = int(math.Floor(float64(spacing) / 2))
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0] + spacing
 			}
-		}
-	case Between:
-		spacing := int(math.Floor(float64(space) / float64(len(extents)-1)))
-		for i := range extents {
-			if !mainAxis {
-				offsets[i] = space / 2
-			} else if i == 0 {
-				offsets[i] = 0
+		case Between:
+			spacing := int(math.Floor(float64(mainspace) / float64(len(extents)-1)))
+			if i == 0 {
+				offsets[i][0] = 0
 			} else {
-				offsets[i] = offsets[i-1] + extents[i-1] + spacing
+				offsets[i][0] = offsets[i-1][0] + extents[i-1][0] + spacing
 			}
+		default:
+			panic(fmt.Errorf("can't handle main axis justification %s", mainj))
 		}
-	default:
-		panic(fmt.Errorf("can't handle justification %s", j))
+		switch crossj {
+		case Start:
+			offsets[i][1] = 0
+		case End:
+			offsets[i][1] = crossspace - extents[i][1]
+		case Center, Evenly, Around, Between:
+			offsets[i][1] = int(math.Floor(float64(crossspace)/2)) - int(math.Floor(float64(extents[i][1])/2))
+		default:
+			panic(fmt.Errorf("can't handle cross axis justification %s", crossj))
+		}
 	}
 	return offsets
 }

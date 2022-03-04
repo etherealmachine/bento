@@ -67,7 +67,7 @@ func (p *Page2) UI() string {
 	{{index .Paragraphs 1}}
 	{{index .Paragraphs 2}}
 		</Text>
-		<row>
+		<row grow="1 0">
 			<Button>Clicks: {{.Clicks}}</Button>
 			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>
 		</row>
