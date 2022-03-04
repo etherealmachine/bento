@@ -33,7 +33,7 @@ func (d *Demo) Page1() *bento.Box {
 }
 
 func (d *Demo) Page2() *bento.Box {
-	p := &Page2{Paragraphs: paragraphs}
+	p := &Page2{Title: "Loomings", Content: paragraphs[0], Paragraphs: paragraphs}
 	b, err := bento.Build(p)
 	if err != nil {
 		log.Fatal(err)

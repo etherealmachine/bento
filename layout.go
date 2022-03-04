@@ -3,6 +3,7 @@ package bento
 import (
 	"fmt"
 	"image"
+	"log"
 	"math"
 
 	"github.com/etherealmachine/bento/text"
@@ -52,6 +53,18 @@ func (n *Box) size() {
 		bounds := n.style.Image.Bounds()
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
+	} else if n.tag == "input" {
+		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
+		n.TextBounds = &bounds
+		n.ContentWidth = bounds.Dy()
+		n.ContentHeight = bounds.Dx()
+	} else if n.tag == "textarea" {
+		bounds := text.BoundString(n.style.Font, n.attrs["value"])
+		n.TextBounds = &bounds
+		n.ContentWidth = bounds.Dy()
+		n.ContentHeight = bounds.Dx()
+	} else if n.tag != "row" && n.tag != "col" {
+		log.Fatalf("can't size %s", n.tag)
 	}
 	for _, c := range n.children {
 		c.size()

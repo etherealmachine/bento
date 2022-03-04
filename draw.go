@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"log"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -60,6 +61,13 @@ func (n *Box) Draw(img *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
 		img.DrawImage(n.style.Image, op)
+	case "input":
+		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
+	case "textarea":
+		text.DrawParagraph(img, n.attrs["value"], n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
+	case "row", "col":
+	default:
+		log.Fatalf("can't draw %s", n.tag)
 	}
 	if n.debug {
 		// Annotate

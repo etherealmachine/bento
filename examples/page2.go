@@ -9,8 +9,9 @@ import (
 )
 
 type Page2 struct {
-	Clicks     int
-	Paragraphs []string
+	Clicks         int
+	Paragraphs     []string
+	Title, Content string
 }
 
 func (p *Page2) OnKeyDown(key ebiten.Key) bool {
@@ -58,11 +59,15 @@ func (p *Page2) Button() *bento.Style {
 func (p *Page2) UI() string {
 	return `<col grow="1" justify="center" border="frame.png 10">
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
-		<row grow="1">
-			<img src="profile.png"/>
-			<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{index .Paragraphs 0}}</p>
-		</row>
-		<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum</text>
+		<col grow="1">
+			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{.Title}}</text>
+			<row>
+				<img src="profile.png"/>
+				<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
+			</row>
+			<input grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
+			<textarea grow="1" value="Content" color="#ffffff" />
+		</col>
 		<Text border="frame.png 10">
 	{{index .Paragraphs 1}}
 	{{index .Paragraphs 2}}

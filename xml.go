@@ -17,6 +17,8 @@ var allowedTags = []string{
 	"text",
 	"button",
 	"img",
+	"input",
+	"textarea",
 }
 
 func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
