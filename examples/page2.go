@@ -22,6 +22,10 @@ func (p *Page2) handleClick(_ string) {
 	p.Clicks++
 }
 
+func (p *Page2) handleChange(old, new string) {
+	p.Title = new
+}
+
 func (p *Page2) Reset(_ string) {
 	p.Clicks = 0
 }
@@ -56,6 +60,19 @@ func (p *Page2) Button() *bento.Style {
 	}
 }
 
+func (p *Page2) Input() *bento.Style {
+	button, _, _ := ebitenutil.NewImageFromFile("button.png")
+	return &bento.Style{
+		Extends:  "input",
+		FontName: "NotoSans",
+		FontSize: 16,
+		Margin:   &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
+		Padding:  &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
+		Color:    &color.RGBA{R: 255, G: 255, B: 255, A: 255},
+		Input:    bento.NewInput(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}, p.handleChange),
+	}
+}
+
 func (p *Page2) UI() string {
 	return `<col grow="1" justify="center" border="frame.png 10">
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
@@ -65,7 +82,7 @@ func (p *Page2) UI() string {
 				<img src="profile.png"/>
 				<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
 			</row>
-			<input grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
+			<Input grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" />
 		</col>
 		<Text border="frame.png 10">

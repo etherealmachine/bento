@@ -62,7 +62,8 @@ func (n *Box) Draw(img *ebiten.Image) {
 		op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
 		img.DrawImage(n.style.Image, op)
 	case "input":
-		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
+		n.style.Input.Draw(img)
+		//text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
 	case "textarea":
 		text.DrawParagraph(img, n.attrs["value"], n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
 	case "row", "col":

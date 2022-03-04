@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"golang.org/x/image/font"
 )
 
 type ButtonState int
@@ -131,6 +132,38 @@ func buttonState(rect image.Rectangle) ButtonState {
 		return Hover
 	}
 	return Idle
+}
+
+type Input struct {
+	state    ButtonState
+	value    string
+	onChange func(old, new string)
+	states   [4]*NineSlice
+	rect     image.Rectangle
+	font     font.Face
+}
+
+func NewInput(img *ebiten.Image, widths, heights [3]int, onChange func(old, new string)) *Input {
+	b := &Input{
+		onChange: onChange,
+	}
+	w := widths[0] + widths[1] + widths[2]
+	for i := 0; i < 4; i++ {
+		b.states[i] = NewNineSlice(img, widths, heights, w*i, 0)
+	}
+	return b
+}
+
+func (i *Input) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	return keys, nil
+}
+
+func (i *Input) Draw(screen *ebiten.Image) {
+	i.states[int(i.state)].Draw(screen, i.rect.Min.X, i.rect.Min.Y, i.rect.Dx(), i.rect.Dy())
+}
+
+func (i *Input) Bounds() image.Rectangle {
+	return i.rect
 }
 
 /*

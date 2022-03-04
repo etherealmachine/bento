@@ -64,6 +64,7 @@ type Style struct {
 	Border              *NineSlice
 	Button              *Button
 	Scrollbar           *Scrollbar
+	Input               *Input
 	Image               *ebiten.Image
 	MinWidth, MinHeight int
 	MaxWidth, MaxHeight int
@@ -166,6 +167,9 @@ func (n *Box) styleSize() {
 		n.style.Scrollbar.y = inner.Min.Y
 		n.style.Scrollbar.height = inner.Dy()
 	}
+	if n.style.Input != nil {
+		n.style.Input.rect = n.innerRect()
+	}
 }
 
 func (s *Style) parseAttributes() error {
@@ -258,6 +262,15 @@ func (s *Style) parseAttributes() error {
 	}
 	// TODO
 	// s.Scrollbar
+	// s.Input
+	/*
+		if s.Input == nil {
+			if s.Input, err = parseInput(s.attrs["img"]); err != nil {
+				return fmt.Errorf("error parsing input: %s", err)
+			}
+		}
+	*/
+	// s.Textarea
 	return nil
 }
 
