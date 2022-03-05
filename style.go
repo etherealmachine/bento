@@ -3,7 +3,6 @@ package bento
 import (
 	"fmt"
 	"image/color"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -62,9 +61,9 @@ type Style struct {
 	FontSize            int
 	Font                font.Face
 	Border              *NineSlice
-	Button              *Button
-	Scrollbar           *Scrollbar
-	Input               *Input
+	Button              *[4]*NineSlice
+	Scrollbar           *[3][4]*NineSlice
+	Input               *[4]*NineSlice
 	Image               *ebiten.Image
 	MinWidth, MinHeight int
 	MaxWidth, MaxHeight int
@@ -158,18 +157,6 @@ func (n *Box) styleSize() {
 	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
 		n.ContentHeight = n.style.MaxHeight
 	}
-	if n.style.Button != nil {
-		n.style.Button.rect = n.innerRect()
-	}
-	if n.style.Scrollbar != nil {
-		inner := n.innerRect()
-		n.style.Scrollbar.x = inner.Max.X
-		n.style.Scrollbar.y = inner.Min.Y
-		n.style.Scrollbar.height = inner.Dy()
-	}
-	if n.style.Input != nil {
-		n.style.Input.rect = n.innerRect()
-	}
 }
 
 func (s *Style) parseAttributes() error {
@@ -250,26 +237,20 @@ func (s *Style) parseAttributes() error {
 		}
 	}
 	if s.Button == nil {
-		if s.Button, err = parseButton(s.Attrs["btn"]); err != nil {
+		if s.Button, err = ParseButton(s.Attrs["btn"]); err != nil {
 			return fmt.Errorf("error parsing button: %s", err)
 		}
-		if s.Button != nil {
-			s.Button.onClick = func(id string) {
-				m := reflect.ValueOf(s.node.component).MethodByName(s.Attrs["onClick"])
-				m.Call([]reflect.Value{reflect.ValueOf(id)})
-			}
+	}
+	if s.Scrollbar == nil {
+		if s.Scrollbar, err = ParseScrollbar(s.Attrs["scrollbar"]); err != nil {
+			return fmt.Errorf("error parsing scrollbar: %s", err)
 		}
 	}
-	// TODO
-	// s.Scrollbar
-	// s.Input
-	/*
-		if s.Input == nil {
-			if s.Input, err = parseInput(s.attrs["img"]); err != nil {
-				return fmt.Errorf("error parsing input: %s", err)
-			}
+	if s.Input == nil {
+		if s.Input, err = ParseButton(s.Attrs["input"]); err != nil {
+			return fmt.Errorf("error parsing input: %s", err)
 		}
-	*/
+	}
 	// s.Textarea
 	return nil
 }
@@ -407,7 +388,7 @@ func loadNineSlice(spec string) (*NineSlice, error) {
 }
 
 // e.g. "button.png 6"
-func parseButton(spec string) (*Button, error) {
+func ParseButton(spec string) (*[4]*NineSlice, error) {
 	if spec == "" {
 		return nil, nil
 	}
@@ -415,7 +396,32 @@ func parseButton(spec string) (*Button, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewButton(img, *widths, *heights, nil), nil
+	var states [4]*NineSlice
+	w := widths[0] + widths[1] + widths[2]
+	for i := 0; i < 4; i++ {
+		states[i] = NewNineSlice(img, *widths, *heights, w*i, 0)
+	}
+	return &states, nil
+}
+
+// e.g. "scrollbar.png 6"
+func ParseScrollbar(spec string) (*[3][4]*NineSlice, error) {
+	if spec == "" {
+		return nil, nil
+	}
+	img, widths, heights, err := loadImageFromSpec(spec, 4)
+	if err != nil {
+		return nil, err
+	}
+	var states [3][4]*NineSlice
+	w := widths[0] + widths[1] + widths[2]
+	h := heights[0] + heights[1] + heights[2]
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 4; j++ {
+			states[i][j] = NewNineSlice(img, *widths, *heights, w*i, j*h)
+		}
+	}
+	return &states, nil
 }
 
 func loadImageFromSpec(spec string, frames int) (*ebiten.Image, *[3]int, *[3]int, error) {

@@ -2,10 +2,10 @@ package main
 
 import (
 	"image/color"
+	"log"
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Page2 struct {
@@ -31,7 +31,10 @@ func (p *Page2) Reset(_ string) {
 }
 
 func (p *Page2) Text() *bento.Style {
-	scrollbar, _, _ := ebitenutil.NewImageFromFile("scrollbar.png")
+	scrollbar, err := bento.ParseScrollbar("scrollbar.png 6")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &bento.Style{
 		Extends:   "p",
 		FontName:  "NotoSans",
@@ -39,7 +42,7 @@ func (p *Page2) Text() *bento.Style {
 		Margin:    &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
 		Padding:   &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
 		Color:     &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Scrollbar: bento.NewScrollbar(scrollbar, [3]int{6, 20, 6}, [3]int{6, 20, 6}),
+		Scrollbar: scrollbar,
 		Attrs: map[string]string{
 			"maxWidth":  "50em",
 			"maxHeight": "8em",
@@ -48,7 +51,10 @@ func (p *Page2) Text() *bento.Style {
 }
 
 func (p *Page2) Button() *bento.Style {
-	button, _, _ := ebitenutil.NewImageFromFile("button.png")
+	btn, err := bento.ParseButton("button.png 6")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &bento.Style{
 		Extends:  "button",
 		FontName: "NotoSans",
@@ -56,12 +62,15 @@ func (p *Page2) Button() *bento.Style {
 		Margin:   &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
 		Padding:  &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
 		Color:    &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Button:   bento.NewButton(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}, p.handleClick),
+		Button:   btn,
 	}
 }
 
 func (p *Page2) Input() *bento.Style {
-	button, _, _ := ebitenutil.NewImageFromFile("button.png")
+	input, err := bento.ParseButton("input.png 6")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &bento.Style{
 		Extends:  "input",
 		FontName: "NotoSans",
@@ -69,7 +78,7 @@ func (p *Page2) Input() *bento.Style {
 		Margin:   &bento.Spacing{Top: 4, Bottom: 4, Left: 4, Right: 4},
 		Padding:  &bento.Spacing{Top: 12, Bottom: 12, Left: 12, Right: 12},
 		Color:    &color.RGBA{R: 255, G: 255, B: 255, A: 255},
-		Input:    bento.NewInput(button, [3]int{6, 20, 6}, [3]int{6, 20, 6}, p.handleChange),
+		Input:    input,
 	}
 }
 

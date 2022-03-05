@@ -41,6 +41,7 @@ type Box struct {
 	content     string
 	contentTmpl *template.Template
 	buffer      *ebiten.Image
+	widgets     []Widget
 }
 
 func (n *Box) clone(parent *Box) *Box {
@@ -202,15 +203,8 @@ func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 		n.dump()
 	}
 	var err error
-	if btn := n.style.Button; btn != nil {
-		btn.box = n
-		keys, err = btn.Update(keys)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if scroll := n.style.Scrollbar; scroll != nil {
-		keys, err = scroll.Update(keys)
+	for _, w := range n.widgets {
+		keys, err = w.Update(keys, n)
 		if err != nil {
 			return nil, err
 		}

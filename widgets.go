@@ -5,8 +5,12 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"golang.org/x/image/font"
 )
+
+type Widget interface {
+	Update(keys []ebiten.Key, n *Box) ([]ebiten.Key, error)
+	Draw(screen *ebiten.Image, n *Box)
+}
 
 type ButtonState int
 
@@ -19,37 +23,21 @@ const (
 
 type Button struct {
 	states  [4]*NineSlice
-	rect    image.Rectangle
 	state   ButtonState
-	onClick func(id string)
-	box     *Box
+	onClick func()
 }
 
-func NewButton(img *ebiten.Image, widths, heights [3]int, onClick func(id string)) *Button {
-	b := &Button{
-		onClick: onClick,
-	}
-	w := widths[0] + widths[1] + widths[2]
-	for i := 0; i < 4; i++ {
-		b.states[i] = NewNineSlice(img, widths, heights, w*i, 0)
-	}
-	return b
-}
-
-func (b *Button) Bounds() image.Rectangle {
-	return b.rect
-}
-
-func (b *Button) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
-	b.state = buttonState(b.rect)
+func (b *Button) Update(keys []ebiten.Key, n *Box) ([]ebiten.Key, error) {
+	b.state = buttonState(n.innerRect())
 	if b.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		b.onClick(b.box.attrs["id"])
+		b.onClick()
 	}
 	return keys, nil
 }
 
-func (b *Button) Draw(screen *ebiten.Image) {
-	b.states[int(b.state)].Draw(screen, b.rect.Min.X, b.rect.Min.Y, b.rect.Dx(), b.rect.Dy())
+func (b *Button) Draw(screen *ebiten.Image, n *Box) {
+	r := n.innerRect()
+	b.states[int(b.state)].Draw(screen, r.Min.X, r.Min.Y, r.Dx(), r.Dy())
 }
 
 var (
@@ -58,39 +46,23 @@ var (
 
 type Scrollbar struct {
 	states                                               [3][4]*NineSlice
-	x, y, height                                         int
 	position                                             float64
 	topBtnState, bottomBtnState, trackState, handleState ButtonState
 }
 
-func NewScrollbar(img *ebiten.Image, widths, heights [3]int) *Scrollbar {
-	s := &Scrollbar{}
-	w := widths[0] + widths[1] + widths[2]
-	h := heights[0] + heights[1] + heights[2]
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 4; j++ {
-			s.states[i][j] = NewNineSlice(img, widths, heights, w*i, j*h)
-		}
-	}
-	return s
-}
-
-func (s *Scrollbar) Position() float64 {
-	return s.position
-}
-
-func (s *Scrollbar) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+func (s *Scrollbar) Update(keys []ebiten.Key, box *Box) ([]ebiten.Key, error) {
 	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
 	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
 
-	s.topBtnState = buttonState(image.Rect(s.x, s.y, s.x+w, s.y+h))
+	r := box.innerRect()
+	s.topBtnState = buttonState(r)
 	if s.topBtnState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		s.position -= Scrollspeed
 	}
-	trackHeight := s.height - 2*h
-	s.trackState = buttonState(image.Rect(s.x, s.y+h, s.x+w, s.y+h+trackHeight))
-	s.handleState = buttonState(image.Rect(s.x, s.y+h+int(s.position*float64(trackHeight-h)), s.x+w, s.y+h+int(s.position*float64(trackHeight-h))+h))
-	s.bottomBtnState = buttonState(image.Rect(s.x, s.y+s.height-h, s.x+w, s.y+s.height))
+	trackHeight := r.Dy() - 2*h
+	s.trackState = buttonState(image.Rect(r.Min.X, r.Min.Y+h, r.Min.X+w, r.Min.Y+h+trackHeight))
+	s.handleState = buttonState(image.Rect(r.Min.X, r.Min.Y+h+int(s.position*float64(trackHeight-h)), r.Min.X+w, r.Min.Y+h+int(s.position*float64(trackHeight-h))+h))
+	s.bottomBtnState = buttonState(image.Rect(r.Min.X, r.Max.Y-h, r.Min.X+w, r.Max.X))
 	if s.bottomBtnState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		s.position += Scrollspeed
 	}
@@ -108,19 +80,15 @@ func (s *Scrollbar) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 	return keys, nil
 }
 
-func (s *Scrollbar) Draw(screen *ebiten.Image) {
+func (s *Scrollbar) Draw(screen *ebiten.Image, n *Box) {
+	r := n.innerRect()
 	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
 	h := s.states[0][0].heights[0] + s.states[0][0].heights[1] + s.states[0][0].heights[2]
-	trackHeight := s.height - 2*h
-	s.states[s.topBtnState][0].Draw(screen, s.x, s.y, w, h)
-	s.states[s.trackState][1].Draw(screen, s.x, s.y+h, w, trackHeight)
-	s.states[s.handleState][2].Draw(screen, s.x, s.y+h+int(s.position*float64(trackHeight-h)), w, h)
-	s.states[s.bottomBtnState][3].Draw(screen, s.x, s.y+s.height-h, w, h)
-}
-
-func (s *Scrollbar) Bounds() image.Rectangle {
-	w := s.states[0][0].widths[0] + s.states[0][0].widths[1] + s.states[0][0].widths[2]
-	return image.Rect(s.x, s.y, s.x+w, s.y+s.height)
+	trackHeight := r.Dy() - 2*h
+	s.states[s.topBtnState][0].Draw(screen, r.Min.X, r.Min.Y, w, h)
+	s.states[s.trackState][1].Draw(screen, r.Min.X, r.Min.Y+h, w, trackHeight)
+	s.states[s.handleState][2].Draw(screen, r.Min.X, r.Min.Y+h+int(s.position*float64(trackHeight-h)), w, h)
+	s.states[s.bottomBtnState][3].Draw(screen, r.Min.X, r.Max.Y-h, w, h)
 }
 
 func buttonState(rect image.Rectangle) ButtonState {
@@ -136,11 +104,8 @@ func buttonState(rect image.Rectangle) ButtonState {
 
 type Input struct {
 	state    ButtonState
-	value    string
 	onChange func(old, new string)
 	states   [4]*NineSlice
-	rect     image.Rectangle
-	font     font.Face
 }
 
 func NewInput(img *ebiten.Image, widths, heights [3]int, onChange func(old, new string)) *Input {
@@ -154,16 +119,14 @@ func NewInput(img *ebiten.Image, widths, heights [3]int, onChange func(old, new 
 	return b
 }
 
-func (i *Input) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+func (i *Input) Update(keys []ebiten.Key, n *Box) ([]ebiten.Key, error) {
+	i.state = buttonState(n.innerRect())
 	return keys, nil
 }
 
-func (i *Input) Draw(screen *ebiten.Image) {
-	i.states[int(i.state)].Draw(screen, i.rect.Min.X, i.rect.Min.Y, i.rect.Dx(), i.rect.Dy())
-}
-
-func (i *Input) Bounds() image.Rectangle {
-	return i.rect
+func (i *Input) Draw(screen *ebiten.Image, n *Box) {
+	r := n.innerRect()
+	i.states[int(i.state)].Draw(screen, r.Min.X, r.Min.Y, r.Dx(), r.Dy())
 }
 
 /*

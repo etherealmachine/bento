@@ -83,9 +83,11 @@ func (n *Box) size() {
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
-	if n.TextBounds != nil && n.TextBounds.Dy() > n.ContentHeight {
-		n.OuterWidth += n.style.Scrollbar.Bounds().Dx()
-	}
+	/*
+		if n.TextBounds != nil && n.TextBounds.Dy() > n.ContentHeight {
+			n.OuterWidth += n.style.Scrollbar.Bounds().Dx()
+		}
+	*/
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
