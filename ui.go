@@ -31,6 +31,7 @@ type Box struct {
 	children []*Box
 	style    *Style
 	layout
+	state
 	parent      *Box
 	component   Component
 	context     interface{}
@@ -40,9 +41,16 @@ type Box struct {
 	attrTmpls   map[string]*template.Template
 	content     string
 	contentTmpl *template.Template
-	buffer      *ebiten.Image
-	widgets     []Widget
 }
+
+type ButtonState int
+
+const (
+	Idle     = ButtonState(0)
+	Hover    = ButtonState(1)
+	Active   = ButtonState(2)
+	Disabled = ButtonState(3)
+)
 
 func (n *Box) clone(parent *Box) *Box {
 	attrs := make(map[string]string)
@@ -76,6 +84,13 @@ type layout struct {
 	InnerWidth, InnerHeight     int `xml:",attr"`
 	OuterWidth, OuterHeight     int `xml:",attr"`
 	TextBounds                  *image.Rectangle
+}
+
+type state struct {
+	buttonState    ButtonState
+	inputState     ButtonState
+	cursorPosition int
+	scrollPosition int
 }
 
 func (n *Box) visit(f func(n *Box) error) error {
@@ -202,13 +217,15 @@ func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
 		n.toggleDebug()
 		n.dump()
 	}
-	var err error
-	for _, w := range n.widgets {
-		keys, err = w.Update(keys, n)
-		if err != nil {
-			return nil, err
+	n.buttonState = buttonState(n.innerRect())
+	if n.buttonState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		attr := n.attrs["onClick"]
+		m := reflect.ValueOf(n.component).MethodByName(attr)
+		if m.IsValid() {
+			m.Call(nil)
 		}
 	}
+	var err error
 	for _, c := range n.children {
 		keys, err = c.Update(keys)
 		if err != nil {
@@ -268,4 +285,15 @@ func min(a, b int) int {
 
 func inside(r image.Rectangle, x, y int) bool {
 	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
+}
+
+func buttonState(rect image.Rectangle) ButtonState {
+	x, y := ebiten.CursorPosition()
+	if inside(rect, x, y) {
+		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+			return Active
+		}
+		return Hover
+	}
+	return Idle
 }

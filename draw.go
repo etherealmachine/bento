@@ -32,38 +32,25 @@ func (n *Box) Draw(img *ebiten.Image) {
 	if n.style != nil && n.style.Border != nil {
 		n.style.Border.Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
 	}
-	for _, w := range n.widgets {
-		w.Draw(img, n)
-	}
 	if n.debug {
 		// Content
 		drawBox(img, content, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true)
 	}
 	switch n.tag {
 	case "button":
+		n.style.Button[int(n.buttonState)].Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, content, text.Center, text.Center)
 	case "text":
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, content, text.Center, text.Center)
 	case "p":
-		if scroll := n.style.Scrollbar; scroll != nil {
-			n.buffer = ebiten.NewImage(n.TextBounds.Dx(), n.TextBounds.Dy())
-			text.DrawParagraph(n.buffer, n.templateContent(), n.style.Font, n.style.Color, 0, 0, n.style.MaxWidth, -n.TextBounds.Min.Y)
-			offset := int(scroll.position * float64(n.TextBounds.Dy()))
-			cropped := ebiten.NewImageFromImage(n.buffer.SubImage(image.Rect(0, offset, content.Dx(), content.Dy()+offset)))
-			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
-			img.DrawImage(cropped, op)
-			n.style.Scrollbar.Draw(img, n)
-		} else {
-			text.DrawParagraph(img, n.templateContent(), n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
-		}
+		text.DrawParagraph(img, n.templateContent(), n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
 	case "img":
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
 		img.DrawImage(n.style.Image, op)
 	case "input":
-		n.style.Input.Draw(img, n)
-		//text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
+		n.style.Input[int(n.inputState)].Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
+		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
 	case "textarea":
 		text.DrawParagraph(img, n.attrs["value"], n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
 	case "row", "col":

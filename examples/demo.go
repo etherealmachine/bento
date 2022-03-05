@@ -15,11 +15,11 @@ func (d *Demo) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (d *Demo) Prev(_ string) {
+func (d *Demo) Prev() {
 	d.CurrentPage = 0
 }
 
-func (d *Demo) Next(_ string) {
+func (d *Demo) Next() {
 	d.CurrentPage = 1
 }
 

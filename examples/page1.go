@@ -12,11 +12,11 @@ func (p *Page1) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (p *Page1) Click(_ string) {
+func (p *Page1) Click() {
 	p.Clicks++
 }
 
-func (p *Page1) Reset(_ string) {
+func (p *Page1) Reset() {
 	p.Clicks = 0
 }
 

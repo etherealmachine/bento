@@ -18,15 +18,15 @@ func (p *Page2) OnKeyDown(key ebiten.Key) bool {
 	return false
 }
 
-func (p *Page2) handleClick(_ string) {
+func (p *Page2) Click() {
 	p.Clicks++
 }
 
-func (p *Page2) handleChange(old, new string) {
+func (p *Page2) Change(old, new string) {
 	p.Title = new
 }
 
-func (p *Page2) Reset(_ string) {
+func (p *Page2) Reset() {
 	p.Clicks = 0
 }
 
@@ -91,7 +91,7 @@ func (p *Page2) UI() string {
 				<img src="profile.png"/>
 				<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
 			</row>
-			<Input grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
+			<Input onChange="Change" grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" />
 		</col>
 		<Text border="frame.png 10">
@@ -99,7 +99,7 @@ func (p *Page2) UI() string {
 	{{index .Paragraphs 2}}
 		</Text>
 		<row grow="1 0">
-			<Button>Clicks: {{.Clicks}}</Button>
+			<Button onClick="Click">Clicks: {{.Clicks}}</Button>
 			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>
 		</row>
 	</col>`
