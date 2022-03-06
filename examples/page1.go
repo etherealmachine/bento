@@ -1,15 +1,7 @@
 package main
 
-import (
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
 type Page1 struct {
 	Clicks int
-}
-
-func (p *Page1) OnKeyDown(key ebiten.Key) bool {
-	return false
 }
 
 func (p *Page1) Click() {

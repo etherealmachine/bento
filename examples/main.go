@@ -9,7 +9,6 @@ import (
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 var paragraphs []string
@@ -27,9 +26,7 @@ type Game struct {
 }
 
 func (g *Game) Update() error {
-	var keys []ebiten.Key
-	keys = inpututil.AppendPressedKeys(keys)
-	if _, err := g.ui.Update(keys); err != nil {
+	if err := g.ui.Update(); err != nil {
 		return err
 	}
 	return nil

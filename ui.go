@@ -23,7 +23,6 @@ import (
 
 type Component interface {
 	UI() string
-	OnKeyDown(key ebiten.Key) bool
 }
 
 type Box struct {
@@ -86,10 +85,10 @@ type layout struct {
 }
 
 type state struct {
-	buttonState    ButtonState
-	inputState     ButtonState
-	cursorPosition int
-	scrollPosition int
+	buttonState          ButtonState
+	inputState           ButtonState
+	cursorRow, cursorCol int
+	scrollPosition       int
 }
 
 func (n *Box) visit(f func(n *Box) error) error {
@@ -202,41 +201,59 @@ func (n *Box) templateContent() string {
 	return n.content
 }
 
-func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+func (n *Box) Update() error {
 	if n.parent == nil {
 		n.size()
 		n.grow()
 		n.justify()
 	}
-	if len(keys) == 0 {
-		for _, k := range keys {
-			if inpututil.IsKeyJustPressed(k) {
-				if !n.component.OnKeyDown(k) {
-					keys = append(keys, k)
-				}
-			}
-		}
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyD) {
+	var keys []ebiten.Key
+	keys = inpututil.AppendPressedKeys(keys)
+	if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
 		n.toggleDebug()
 		n.dump()
 	}
-	n.buttonState = buttonState(n.innerRect())
-	if n.buttonState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		attr := n.attrs["onClick"]
-		m := reflect.ValueOf(n.component).MethodByName(attr)
-		if m.IsValid() {
-			m.Call(nil)
+	if n.tag == "button" {
+		n.buttonState = buttonState(n.innerRect())
+		if n.buttonState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			attr := n.attrs["onClick"]
+			m := reflect.ValueOf(n.component).MethodByName(attr)
+			if m.IsValid() {
+				m.Call(nil)
+			}
 		}
 	}
-	var err error
+	if n.tag == "input" {
+		state := buttonState(n.innerRect())
+		if state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			n.inputState = Active
+		} else if n.inputState != Active || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			n.inputState = state
+		}
+		if n.inputState == Active {
+			v := n.attrs["value"]
+			for _, k := range keys {
+				if (k >= ebiten.KeyA && k <= ebiten.KeyZ) || (k >= ebiten.KeyNumpad0 && k <= ebiten.KeyNumpad9) {
+					if inpututil.IsKeyJustPressed(k) {
+						if k == ebiten.KeySpace {
+							v += " "
+						} else if ebiten.IsKeyPressed(ebiten.KeyShift) {
+							v += strings.ToUpper(k.String())
+						} else {
+							v += strings.ToLower(k.String())
+						}
+					}
+				}
+			}
+			n.attrs["value"] = v
+		}
+	}
 	for _, c := range n.children {
-		keys, err = c.Update(keys)
-		if err != nil {
-			return nil, err
+		if err := c.Update(); err != nil {
+			return err
 		}
 	}
-	return keys, nil
+	return nil
 }
 
 func (n *Box) templateAttr(attr string, def bool) bool {

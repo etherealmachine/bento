@@ -4,15 +4,10 @@ import (
 	"log"
 
 	"github.com/etherealmachine/bento"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Demo struct {
 	CurrentPage int
-}
-
-func (d *Demo) OnKeyDown(key ebiten.Key) bool {
-	return false
 }
 
 func (d *Demo) Prev() {

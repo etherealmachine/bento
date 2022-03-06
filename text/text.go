@@ -233,7 +233,7 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, op *ebiten.DrawImageOptions) error {
+func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, op ebiten.DrawImageOptions) error {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return nil
@@ -290,7 +290,7 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		}
 
 		img := getGlyphImage(face, r)
-		drawGlyph(dst, face, r, img, dx, dy, op)
+		drawGlyph(dst, face, r, img, dx, dy, &op)
 		dx += glyphAdvance(face, r)
 
 		prevR = r
@@ -359,7 +359,7 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	)
 }
 
-func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth int, op *ebiten.DrawImageOptions) {
+func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth int, op ebiten.DrawImageOptions) {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return
@@ -402,7 +402,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 			}
 
 			img := getGlyphImage(face, r)
-			drawGlyph(dst, face, r, img, dx, dy, op)
+			drawGlyph(dst, face, r, img, dx, dy, &op)
 			dx += glyphAdvance(face, r)
 
 			prevR = r

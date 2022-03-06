@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"time"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -60,19 +61,28 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.tag {
 	case "button":
-		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
+		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, *op)
 	case "text":
-		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
+		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, *op)
 	case "p":
 		txt := n.templateContent()
-		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, op)
+		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, *op)
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input":
-		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
+		txt := n.attrs["value"]
+		if txt == "" {
+			txt = n.attrs["placeholder"]
+		}
+		text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, *op)
+		if n.inputState == Active && time.Now().UnixMilli()%2000 < 1000 {
+			b := text.BoundString(n.style.Font, txt)
+			op.GeoM.Translate(float64(b.Dx()), 0)
+			text.DrawString(img, "|", n.style.Font, n.style.Color, 0, n.ContentHeight, text.Center, text.Center, *op)
+		}
 	case "textarea":
 		txt := n.attrs["value"]
-		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, op)
+		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, *op)
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.tag)
@@ -85,7 +95,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		text.DrawString(
 			img,
 			fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight),
-			text.Font("mono", 10), color.Black, n.OuterWidth, n.OuterHeight, text.Start, text.Start, op)
+			text.Font("mono", 10), color.Black, n.OuterWidth, n.OuterHeight, text.Start, text.Start, *op)
 	}
 
 	for _, c := range n.children {
@@ -102,6 +112,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		}
 		cropped := ebiten.NewImageFromImage(img.SubImage(image.Rect(0, 0, w, h)))
 		tmpImage.DrawImage(cropped, tmpOp)
+		// TODO: Draw scrollbar
 		img.Dispose()
 	}
 }

@@ -5,17 +5,12 @@ import (
 	"log"
 
 	"github.com/etherealmachine/bento"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type Page2 struct {
 	Clicks         int
 	Paragraphs     []string
 	Title, Content string
-}
-
-func (p *Page2) OnKeyDown(key ebiten.Key) bool {
-	return false
 }
 
 func (p *Page2) Click() {
@@ -91,7 +86,7 @@ func (p *Page2) UI() string {
 				<img src="profile.png"/>
 				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
 			</row>
-			<Input onChange="Change" grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
+			<Input onChange="Change" grow="1 0" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" />
 		</col>
 		<Text border="frame.png 10">
