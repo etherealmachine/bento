@@ -62,7 +62,7 @@ func (n *NineSlice) createTiles(img *ebiten.Image, ox, oy int) {
 	}
 }
 
-func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int) {
+func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int, op *ebiten.DrawImageOptions) {
 	sy := 0
 	ty := y
 	for r, sh := range n.heights {
@@ -84,7 +84,7 @@ func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int) {
 				tw = sw
 			}
 
-			n.drawTile(screen, n.tiles[r*3+c], tx, ty, sw, sh, tw, th)
+			n.drawTile(screen, n.tiles[r*3+c], tx, ty, sw, sh, tw, th, op)
 
 			sx += sw
 			tx += tw
@@ -95,7 +95,7 @@ func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int) {
 	}
 }
 
-func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, ty int, sw int, sh int, tw int, th int) {
+func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, ty int, sw int, sh int, tw int, th int, op *ebiten.DrawImageOptions) {
 	if sw <= 0 || sh <= 0 || tw <= 0 || th <= 0 {
 		return
 	}
@@ -108,7 +108,8 @@ func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, t
 		opts.GeoM.Scale(float64(tw)/float64(sw), float64(th)/float64(sh))
 	}
 
-	opts.GeoM.Translate(float64(tx), float64(ty))
+	x, y := op.GeoM.Apply(float64(tx), float64(ty))
+	opts.GeoM.Translate(x, y)
 
 	screen.DrawImage(tile, &opts)
 }

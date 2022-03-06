@@ -15,68 +15,105 @@ func (n *Box) Draw(img *ebiten.Image) {
 	if n.style.hidden() || !n.style.display() {
 		return
 	}
-	if n.parent == nil {
-		n.size()
-		n.grow()
-		n.justify()
-	}
-	content := n.contentRect()
-	inner := n.innerRect()
-	outer := n.outerRect()
+	mt, _, _, ml := n.style.margin()
+	pt, _, _, pl := n.style.padding()
+
+	op := new(ebiten.DrawImageOptions)
+	op.GeoM.Translate(float64(n.X), float64(n.Y))
+
 	if n.debug {
 		// Outer
-		drawBox(img, outer, color.White, true)
-		// Inner
-		drawBox(img, inner, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true)
+		drawBox(img, n.OuterWidth, n.OuterHeight, color.White, true, op)
 	}
-	if n.style != nil && n.style.Border != nil {
-		n.style.Border.Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
-	}
+
+	op.GeoM.Translate(float64(ml), float64(mt))
 	if n.debug {
-		// Content
-		drawBox(img, content, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true)
+		// Inner
+		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
+
+	if n.style != nil && n.style.Border != nil {
+		n.style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	}
+
 	switch n.tag {
 	case "button":
-		n.style.Button[int(n.buttonState)].Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
-		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, content, text.Center, text.Center)
+		n.style.Button[int(n.buttonState)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	case "input":
+		n.style.Input[int(n.inputState)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	}
+
+	op.GeoM.Translate(float64(pl), float64(pt))
+	if n.debug {
+		// Content
+		drawBox(img, n.ContentWidth, n.ContentHeight, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true, op)
+	}
+
+	var tmpImage *ebiten.Image
+	var tmpOp *ebiten.DrawImageOptions
+	if n.style.MaxHeight > 0 && n.OuterHeight > n.style.MaxHeight {
+		tmpImage = img
+		tmpOp = op
+		img = ebiten.NewImage(n.OuterWidth, n.OuterHeight)
+		op = new(ebiten.DrawImageOptions)
+	}
+
+	switch n.tag {
+	case "button":
+		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
 	case "text":
-		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, content, text.Center, text.Center)
+		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
 	case "p":
-		text.DrawParagraph(img, n.templateContent(), n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
+		txt := n.templateContent()
+		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, op)
 	case "img":
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(content.Min.X), float64(content.Min.Y))
 		img.DrawImage(n.style.Image, op)
 	case "input":
-		n.style.Input[int(n.inputState)].Draw(img, inner.Min.X, inner.Min.Y, inner.Dx(), inner.Dy())
-		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, content, text.Center, text.Center)
+		text.DrawString(img, n.attrs["placeholder"], n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, op)
 	case "textarea":
-		text.DrawParagraph(img, n.attrs["value"], n.style.Font, n.style.Color, content.Min.X, content.Min.Y, n.style.MaxWidth, -n.TextBounds.Min.Y)
+		txt := n.attrs["value"]
+		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, op)
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.tag)
 	}
+
 	if n.debug {
+		op := new(ebiten.DrawImageOptions)
+		op.GeoM.Translate(float64(n.X), float64(n.Y))
 		// Annotate
 		text.DrawString(
 			img,
 			fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight),
-			text.Font("mono", 10), color.Black, outer.Add(image.Pt(4, 4)), text.Start, text.Start)
+			text.Font("mono", 10), color.Black, n.OuterWidth, n.OuterHeight, text.Start, text.Start, op)
 	}
+
 	for _, c := range n.children {
 		c.Draw(img)
 	}
+
+	if tmpImage != nil {
+		w, h := n.style.MaxWidth, n.style.MaxHeight
+		if w == 0 {
+			w = n.OuterWidth
+		}
+		if h == 0 {
+			h = n.OuterHeight
+		}
+		cropped := ebiten.NewImageFromImage(img.SubImage(image.Rect(0, 0, w, h)))
+		tmpImage.DrawImage(cropped, tmpOp)
+		img.Dispose()
+	}
 }
 
-func drawBox(img *ebiten.Image, rect image.Rectangle, c color.Color, border bool) {
-	x, y := float64(rect.Min.X), float64(rect.Min.Y)
-	w, h := float64(rect.Dx()), float64(rect.Dy())
-	ebitenutil.DrawRect(img, x, y, w, h, c)
+func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, op *ebiten.DrawImageOptions) {
+	x1, y1 := op.GeoM.Apply(float64(0), float64(0))
+	x2, y2 := op.GeoM.Apply(float64(width), float64(height))
+	ebitenutil.DrawRect(img, x1, y1, x2-x1, y2-y1, c)
 	if border {
-		ebitenutil.DrawLine(img, x, y, x+w, y, color.Black)
-		ebitenutil.DrawLine(img, x, y, x, y+h, color.Black)
-		ebitenutil.DrawLine(img, x+w, y+h, x+w, y, color.Black)
-		ebitenutil.DrawLine(img, x+w, y+h, x, y+h, color.Black)
+		ebitenutil.DrawLine(img, x1, y1, x2, y1, color.Black)
+		ebitenutil.DrawLine(img, x1, y1, x1, y2, color.Black)
+		ebitenutil.DrawLine(img, x2, y2, x2, y1, color.Black)
+		ebitenutil.DrawLine(img, x2, y2, x1, y2, color.Black)
 	}
 }

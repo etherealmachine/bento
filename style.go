@@ -149,10 +149,9 @@ func (n *Box) styleSize() {
 		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
 	}
 	if n.tag == "p" {
-		textHeight := n.TextBounds.Dy()
 		metrics := n.style.Font.Metrics()
 		minHeight := metrics.Height.Round()
-		n.ContentHeight = max(textHeight, minHeight)
+		n.ContentHeight = max(n.ContentHeight, minHeight)
 	}
 	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
 		n.ContentHeight = n.style.MaxHeight

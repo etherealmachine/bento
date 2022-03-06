@@ -89,7 +89,7 @@ func (p *Page2) UI() string {
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{.Title}}</text>
 			<row>
 				<img src="profile.png"/>
-				<p grow="1" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
+				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
 			</row>
 			<Input onChange="Change" grow="1 0" value="Title" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" />

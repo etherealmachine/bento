@@ -233,14 +233,14 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, rect image.Rectangle, ha Alignment, va Alignment) error {
+func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, op *ebiten.DrawImageOptions) error {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return nil
 	}
 
 	b := BoundString(face, text)
-	fx, fy, w, h := float64(rect.Min.X), float64(rect.Min.Y), float64(rect.Dx()), float64(rect.Dy())
+	w, h := float64(width), float64(height)
 	ox, oy := float64(b.Min.X), float64(b.Min.Y)
 	tw, th := float64(b.Dx()), float64(b.Dy())
 
@@ -248,27 +248,26 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 
 	switch ha {
 	case Start:
-		tx = fx - ox
+		tx = -ox
 	case Center:
-		tx = fx - ox + w/2 - tw/2
+		tx = -ox + w/2 - tw/2
 	case End:
-		tx = fx - ox + w - tw
+		tx = -ox + w - tw
 	default:
 		return fmt.Errorf("can't handle horizontal alignment %s", ha)
 	}
 
 	switch va {
 	case Start:
-		ty = fy - oy
+		ty = -oy
 	case Center:
-		ty = fy - oy + h/2 - th/2
+		ty = -oy + h/2 - th/2
 	case End:
-		ty = fy - oy + h - th
+		ty = -oy + h - th
 	default:
 		return fmt.Errorf("can't handle vertical alignment %s", va)
 	}
 
-	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(tx, ty)
 	op.ColorM.Scale(float64(cr)/float64(ca), float64(cg)/float64(ca), float64(cb)/float64(ca), float64(ca)/0xffff)
 
@@ -344,9 +343,14 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 			fx += glyphAdvance(face, r)
 			prevR = r
 		}
+		sb := getGlyphBounds(face, ' ')
+		sb.Min.X += fx
+		sb.Max.X += fx
+		sb.Min.Y += fy
+		sb.Max.Y += fy
+		bounds = bounds.Union(sb)
 		fx += sx
 	}
-
 	return image.Rect(
 		int(math.Floor(fixed26_6ToFloat64(bounds.Min.X))),
 		int(math.Floor(fixed26_6ToFloat64(bounds.Min.Y))),
@@ -355,24 +359,23 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	)
 }
 
-func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, x, y, maxWidth, offset int) {
+func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth int, op *ebiten.DrawImageOptions) {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return
 	}
 
 	sx := glyphAdvance(face, ' ')
-	tx, ty := float64(x), float64(y)
 	mw := fixed.I(maxWidth)
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(tx, ty+float64(offset))
 	op.ColorM.Scale(float64(cr)/float64(ca), float64(cg)/float64(ca), float64(cb)/float64(ca), float64(ca)/0xffff)
 
-	var dx, dy fixed.Int26_6
+	var dx fixed.Int26_6
 	prevR := rune(-1)
 
 	faceHeight := face.Metrics().Height
+	b := BoundParagraph(face, text, maxWidth)
+	dy := -fixed.I(b.Min.Y)
 
 	words := strings.Split(text, " ")
 	for _, w := range words {

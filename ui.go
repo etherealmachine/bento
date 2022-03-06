@@ -83,7 +83,6 @@ type layout struct {
 	ContentWidth, ContentHeight int `xml:",attr"`
 	InnerWidth, InnerHeight     int `xml:",attr"`
 	OuterWidth, OuterHeight     int `xml:",attr"`
-	TextBounds                  *image.Rectangle
 }
 
 type state struct {
@@ -204,6 +203,11 @@ func (n *Box) templateContent() string {
 }
 
 func (n *Box) Update(keys []ebiten.Key) ([]ebiten.Key, error) {
+	if n.parent == nil {
+		n.size()
+		n.grow()
+		n.justify()
+	}
 	if len(keys) == 0 {
 		for _, k := range keys {
 			if inpututil.IsKeyJustPressed(k) {

@@ -41,12 +41,10 @@ func (n *Box) size() {
 	}
 	if n.tag == "button" || n.tag == "text" {
 		bounds := text.BoundString(n.style.Font, n.templateContent())
-		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "p" {
 		bounds := text.BoundParagraph(n.style.Font, n.templateContent(), n.style.MaxWidth)
-		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "img" && n.style.Image != nil {
@@ -55,12 +53,10 @@ func (n *Box) size() {
 		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "input" {
 		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
-		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dy()
 		n.ContentHeight = bounds.Dx()
 	} else if n.tag == "textarea" {
 		bounds := text.BoundString(n.style.Font, n.attrs["value"])
-		n.TextBounds = &bounds
 		n.ContentWidth = bounds.Dy()
 		n.ContentHeight = bounds.Dx()
 	} else if n.tag != "row" && n.tag != "col" {
@@ -83,11 +79,6 @@ func (n *Box) size() {
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
-	/*
-		if n.TextBounds != nil && n.TextBounds.Dy() > n.ContentHeight {
-			n.OuterWidth += n.style.Scrollbar.Bounds().Dx()
-		}
-	*/
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
@@ -117,7 +108,7 @@ func (n *Box) grow() {
 		if hg > 0 {
 			if n.tag == "row" {
 				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
-				c.fillWidth(c.ContentWidth + halloc)
+				c.fillWidth(c.OuterWidth + halloc)
 			} else {
 				c.fillWidth(n.OuterWidth)
 			}
@@ -125,7 +116,7 @@ func (n *Box) grow() {
 		if vg > 0 && vgrow > 0 {
 			if n.tag == "col" {
 				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
-				c.fillHeight(c.ContentHeight + valloc)
+				c.fillHeight(c.OuterHeight + valloc)
 			} else {
 				c.fillHeight(c.OuterHeight)
 			}
