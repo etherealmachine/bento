@@ -182,6 +182,10 @@ func BoundString(face font.Face, text string) image.Rectangle {
 		}
 
 		b := getGlyphBounds(face, r)
+		if b.Max.X-b.Min.X == 0 {
+			b.Max.Y = 1
+			b.Max.X = glyphAdvance(face, r)
+		}
 		b.Min.X += fx
 		b.Max.X += fx
 		b.Min.Y += fy
@@ -190,9 +194,6 @@ func BoundString(face font.Face, text string) image.Rectangle {
 
 		fx += glyphAdvance(face, r)
 		prevR = r
-	}
-	if len(text) > 0 && text[len(text)-1] == ' ' {
-		bounds.Max.X += glyphAdvance(face, ' ')
 	}
 
 	return image.Rect(
