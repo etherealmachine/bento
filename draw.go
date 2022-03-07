@@ -93,6 +93,20 @@ func (n *Box) Draw(img *ebiten.Image) {
 	case "textarea":
 		txt := n.attrs["value"]
 		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, *op)
+		if n.inputState == Active {
+			drawCursor := false
+			t := time.Now().UnixMilli()
+			if t-n.cursorTime <= 1000 {
+				drawCursor = true
+			} else if t-n.cursorTime >= 2000 {
+				n.cursorTime = t
+			}
+			if drawCursor {
+				b := text.BoundString(n.style.Font, txt[:n.cursorCol])
+				op.GeoM.Translate(float64(b.Dx()), 0)
+				text.DrawString(img, "|", n.style.Font, n.style.Color, 0, n.ContentHeight, text.Center, text.Center, *op)
+			}
+		}
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.tag)
@@ -124,6 +138,15 @@ func (n *Box) Draw(img *ebiten.Image) {
 		tmpImage.DrawImage(cropped, tmpOp)
 		// TODO: Draw scrollbar
 		img.Dispose()
+	}
+
+	if n.debug && n.parent == nil {
+		op := new(ebiten.DrawImageOptions)
+		op.GeoM.Translate(float64(img.Bounds().Dx()-48), 24)
+		text.DrawString(
+			img,
+			fmt.Sprintf("%.0f", ebiten.CurrentFPS()),
+			text.Font("mono", 24), color.White, 0, 0, text.Start, text.Start, *op)
 	}
 }
 

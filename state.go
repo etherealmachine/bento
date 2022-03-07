@@ -24,7 +24,7 @@ func (n *Box) updateState(keys []ebiten.Key) {
 	switch n.tag {
 	case "button":
 		n.updateButton()
-	case "input":
+	case "input", "textarea":
 		n.updateInput()
 	}
 }
@@ -56,7 +56,7 @@ func (n *Box) updateInput() {
 					v = v[:n.cursorCol] + s + v[n.cursorCol:]
 					n.cursorCol++
 					n.cursorTime = time.Now().UnixMilli()
-				} else if len(v) > 0 && k == ebiten.KeyBackspace {
+				} else if n.cursorCol > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
 					v = v[:n.cursorCol-1] + v[n.cursorCol:]
 					n.cursorCol--
 					n.cursorTime = time.Now().UnixMilli()
