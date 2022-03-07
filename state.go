@@ -50,7 +50,7 @@ func (n *Box) updateInput() {
 	if n.inputState == Active {
 		v := n.attrs["value"]
 		for _, k := range keys {
-			if inpututil.IsKeyJustPressed(k) {
+			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
 				if s != "" {
 					v = v[:n.cursorCol] + s + v[n.cursorCol:]
@@ -71,6 +71,21 @@ func (n *Box) updateInput() {
 		}
 		n.attrs["value"] = v
 	}
+}
+
+func repeatingKeyPressed(key ebiten.Key) bool {
+	const (
+		delay    = 30
+		interval = 3
+	)
+	d := inpututil.KeyPressDuration(key)
+	if d == 1 {
+		return true
+	}
+	if d >= delay && (d-delay)%interval == 0 {
+		return true
+	}
+	return false
 }
 
 func keyToString(k ebiten.Key, shift bool) string {
