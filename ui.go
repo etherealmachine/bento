@@ -84,13 +84,6 @@ type layout struct {
 	OuterWidth, OuterHeight     int `xml:",attr"`
 }
 
-type state struct {
-	buttonState          ButtonState
-	inputState           ButtonState
-	cursorRow, cursorCol int
-	scrollPosition       int
-}
-
 func (n *Box) visit(f func(n *Box) error) error {
 	if err := f(n); err != nil {
 		return err
@@ -201,59 +194,23 @@ func (n *Box) templateContent() string {
 	return n.content
 }
 
+var keys []ebiten.Key
+
 func (n *Box) Update() error {
-	if n.parent == nil {
-		n.size()
-		n.grow()
-		n.justify()
-	}
-	var keys []ebiten.Key
+	n.size()
+	n.grow()
+	n.justify()
 	keys = inpututil.AppendPressedKeys(keys)
 	if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
 		n.toggleDebug()
 		n.dump()
 	}
-	if n.tag == "button" {
-		n.buttonState = buttonState(n.innerRect())
-		if n.buttonState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			attr := n.attrs["onClick"]
-			m := reflect.ValueOf(n.component).MethodByName(attr)
-			if m.IsValid() {
-				m.Call(nil)
-			}
-		}
-	}
-	if n.tag == "input" {
-		state := buttonState(n.innerRect())
-		if state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			n.inputState = Active
-		} else if n.inputState != Active || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			n.inputState = state
-		}
-		if n.inputState == Active {
-			v := n.attrs["value"]
-			for _, k := range keys {
-				if (k >= ebiten.KeyA && k <= ebiten.KeyZ) || (k >= ebiten.KeyNumpad0 && k <= ebiten.KeyNumpad9) {
-					if inpututil.IsKeyJustPressed(k) {
-						if k == ebiten.KeySpace {
-							v += " "
-						} else if ebiten.IsKeyPressed(ebiten.KeyShift) {
-							v += strings.ToUpper(k.String())
-						} else {
-							v += strings.ToLower(k.String())
-						}
-					}
-				}
-			}
-			n.attrs["value"] = v
-		}
-	}
-	for _, c := range n.children {
-		if err := c.Update(); err != nil {
-			return err
-		}
-	}
-	return nil
+	err := n.visit(func(n *Box) error {
+		n.updateState(keys)
+		return nil
+	})
+	keys = keys[:0]
+	return err
 }
 
 func (n *Box) templateAttr(attr string, def bool) bool {

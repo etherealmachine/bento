@@ -76,7 +76,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		}
 		text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, *op)
 		if n.inputState == Active && time.Now().UnixMilli()%2000 < 1000 {
-			b := text.BoundString(n.style.Font, txt)
+			b := text.BoundString(n.style.Font, txt[:n.cursorCol])
 			op.GeoM.Translate(float64(b.Dx()), 0)
 			text.DrawString(img, "|", n.style.Font, n.style.Color, 0, n.ContentHeight, text.Center, text.Center, *op)
 		}
