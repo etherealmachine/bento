@@ -75,10 +75,20 @@ func (n *Box) Draw(img *ebiten.Image) {
 			txt = n.attrs["placeholder"]
 		}
 		text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, *op)
-		if n.inputState == Active && time.Now().UnixMilli()%2000 < 1000 {
-			b := text.BoundString(n.style.Font, txt[:n.cursorCol])
-			op.GeoM.Translate(float64(b.Dx()), 0)
-			text.DrawString(img, "|", n.style.Font, n.style.Color, 0, n.ContentHeight, text.Center, text.Center, *op)
+
+		if n.inputState == Active {
+			drawCursor := false
+			t := time.Now().UnixMilli()
+			if t-n.cursorTime <= 1000 {
+				drawCursor = true
+			} else if t-n.cursorTime >= 2000 {
+				n.cursorTime = t
+			}
+			if drawCursor {
+				b := text.BoundString(n.style.Font, txt[:n.cursorCol])
+				op.GeoM.Translate(float64(b.Dx()), 0)
+				text.DrawString(img, "|", n.style.Font, n.style.Color, 0, n.ContentHeight, text.Center, text.Center, *op)
+			}
 		}
 	case "textarea":
 		txt := n.attrs["value"]

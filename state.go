@@ -2,6 +2,7 @@ package bento
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -16,6 +17,7 @@ type state struct {
 	inputState           ButtonState
 	cursorRow, cursorCol int
 	scrollPosition       int
+	cursorTime           int64
 }
 
 func (n *Box) updateState(keys []ebiten.Key) {
@@ -51,11 +53,19 @@ func (n *Box) updateInput() {
 			if inpututil.IsKeyJustPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
 				if s != "" {
-					v += s
+					v = v[:n.cursorCol] + s + v[n.cursorCol:]
 					n.cursorCol++
+					n.cursorTime = time.Now().UnixMilli()
 				} else if len(v) > 0 && k == ebiten.KeyBackspace {
-					v = v[:len(v)-1]
+					v = v[:n.cursorCol-1] + v[n.cursorCol:]
 					n.cursorCol--
+					n.cursorTime = time.Now().UnixMilli()
+				} else if n.cursorCol > 0 && k == ebiten.KeyLeft {
+					n.cursorCol--
+					n.cursorTime = time.Now().UnixMilli()
+				} else if n.cursorCol < len(v) && k == ebiten.KeyRight {
+					n.cursorCol++
+					n.cursorTime = time.Now().UnixMilli()
 				}
 			}
 		}
