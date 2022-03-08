@@ -53,12 +53,12 @@ func (n *Box) size() {
 		n.ContentHeight = bounds.Dy()
 	} else if n.tag == "input" {
 		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
-		n.ContentWidth = bounds.Dy()
-		n.ContentHeight = bounds.Dx()
+		n.ContentWidth = bounds.Dx()
+		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.tag == "textarea" {
 		bounds := text.BoundString(n.style.Font, n.attrs["value"])
-		n.ContentWidth = bounds.Dy()
-		n.ContentHeight = bounds.Dx()
+		n.ContentWidth = bounds.Dx()
+		n.ContentHeight = bounds.Dy()
 	} else if n.tag != "row" && n.tag != "col" {
 		log.Fatalf("can't size %s", n.tag)
 	}

@@ -204,20 +204,76 @@ func BoundString(face font.Face, text string) image.Rectangle {
 	)
 }
 
+func CursorLocations(face font.Face, text string, maxWidth int) [][]int {
+	m := face.Metrics()
+	faceHeight := m.Height
+
+	sx := glyphAdvance(face, ' ')
+
+	fx, fy, mw := fixed.I(0), fixed.I(0), fixed.I(maxWidth)
+	prevR := rune(-1)
+
+	var locs [][]int
+	var line []int
+	var bounds fixed.Rectangle26_6
+	words := strings.Split(text, " ")
+	for _, w := range words {
+		var width fixed.Int26_6
+		for _, r := range w {
+			width += glyphAdvance(face, r)
+		}
+
+		if mw > 0 && fx+width > mw {
+			fx = 0
+			fy += faceHeight
+			prevR = rune(-1)
+			locs = append(locs, line)
+			line = nil
+		}
+		for _, r := range w {
+			if prevR >= 0 {
+				fx += face.Kern(prevR, r)
+			}
+			if r == '\n' {
+				fx = fixed.I(0)
+				fy += faceHeight
+				prevR = rune(-1)
+				locs = append(locs, line)
+				line = nil
+				continue
+			}
+
+			b := getGlyphBounds(face, r)
+			if b.Max.X-b.Min.X == 0 {
+				b.Max.Y = 1
+				b.Max.X = glyphAdvance(face, r)
+			}
+			b.Min.X += fx
+			b.Max.X += fx
+			b.Min.Y += fy
+			b.Max.Y += fy
+			bounds = bounds.Union(b)
+
+			fx += glyphAdvance(face, r)
+			prevR = r
+			line = append(line, int(math.Ceil(fixed26_6ToFloat64(fx))))
+		}
+		fx += sx
+		line = append(line, int(math.Ceil(fixed26_6ToFloat64(fx))))
+	}
+	locs = append(locs, line)
+	return locs
+}
+
 // DrawString draws a given text on a given destination image dst.
 //
 // face is the font for text rendering.
-// (x, y) represents a 'dot' (period) position.
-// This means that if the given text consisted of a single character ".",
-// it would be positioned at the given position (x, y).
-// Be careful that this doesn't represent left-upper corner position.
 //
 // clr is the color for text rendering.
 //
-// If you want to adjust the position of the text, these functions are useful:
+// width, height, ha, and va specify the alignment of the text inside a box of width and height
 //
-//     * text.BoundString:                     the rendered bounds of the given text.
-//     * golang.org/x/image/font.Face.Metrics: the metrics of the face.
+// cursor will draw a | character at the given boundary between two characters, -1 means no cursor
 //
 // The '\n' newline character puts the following text on the next line.
 // Line height is based on Metrics().Height of the font.
@@ -229,7 +285,7 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // It is OK to call Draw with a same text and a same face at every frame in terms of performance.
 //
-// Draw/DrawWithOptions and CacheGlyphs are implemented like this:
+// Draw and CacheGlyphs are implemented like this:
 //
 //     Draw        = Create glyphs by `(*ebiten.Image).ReplacePixels` and put them into the cache if necessary
 //                 + Draw them onto the destination by `(*ebiten.Image).DrawImage`
@@ -237,10 +293,18 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, op ebiten.DrawImageOptions) error {
+func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, cursor int, op ebiten.DrawImageOptions) error {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return nil
+	}
+
+	if len(text) == 0 {
+		if cursor >= 0 {
+			text = "|"
+		} else {
+			return nil
+		}
 	}
 
 	b := BoundString(face, text)
@@ -280,7 +344,12 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 
 	faceHeight := face.Metrics().Height
 
-	for _, r := range text {
+	var cursorImg *ebiten.Image
+	if cursor > -1 {
+		cursorImg = getGlyphImage(face, '|')
+	}
+
+	for i, r := range text {
 		if prevR >= 0 {
 			dx += face.Kern(prevR, r)
 		}
@@ -295,6 +364,11 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 
 		img := getGlyphImage(face, r)
 		drawGlyph(dst, face, r, img, dx, dy, &op)
+
+		if cursor == i+1 {
+			drawGlyph(dst, face, '|', cursorImg, dx, dy, &op)
+		}
+
 		dx += glyphAdvance(face, r)
 
 		prevR = r

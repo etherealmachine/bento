@@ -5,11 +5,15 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
+	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 var paragraphs []string
 
@@ -50,6 +54,14 @@ func main() {
 	ui, err := bento.Build(&Demo{})
 	if err != nil {
 		log.Fatal(err)
+	}
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 	if err := ebiten.RunGame(&Game{ui: ui}); err != nil {
 		log.Fatal(err)
