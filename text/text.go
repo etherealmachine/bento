@@ -204,67 +204,6 @@ func BoundString(face font.Face, text string) image.Rectangle {
 	)
 }
 
-func CursorLocations(face font.Face, text string, maxWidth int) [][]int {
-	m := face.Metrics()
-	faceHeight := m.Height
-
-	sx := glyphAdvance(face, ' ')
-
-	fx, fy, mw := fixed.I(0), fixed.I(0), fixed.I(maxWidth)
-	prevR := rune(-1)
-
-	var locs [][]int
-	var line []int
-	var bounds fixed.Rectangle26_6
-	words := strings.Split(text, " ")
-	for _, w := range words {
-		var width fixed.Int26_6
-		for _, r := range w {
-			width += glyphAdvance(face, r)
-		}
-
-		if mw > 0 && fx+width > mw {
-			fx = 0
-			fy += faceHeight
-			prevR = rune(-1)
-			locs = append(locs, line)
-			line = nil
-		}
-		for _, r := range w {
-			if prevR >= 0 {
-				fx += face.Kern(prevR, r)
-			}
-			if r == '\n' {
-				fx = fixed.I(0)
-				fy += faceHeight
-				prevR = rune(-1)
-				locs = append(locs, line)
-				line = nil
-				continue
-			}
-
-			b := getGlyphBounds(face, r)
-			if b.Max.X-b.Min.X == 0 {
-				b.Max.Y = 1
-				b.Max.X = glyphAdvance(face, r)
-			}
-			b.Min.X += fx
-			b.Max.X += fx
-			b.Min.Y += fy
-			b.Max.Y += fy
-			bounds = bounds.Union(b)
-
-			fx += glyphAdvance(face, r)
-			prevR = r
-			line = append(line, int(math.Ceil(fixed26_6ToFloat64(fx))))
-		}
-		fx += sx
-		line = append(line, int(math.Ceil(fixed26_6ToFloat64(fx))))
-	}
-	locs = append(locs, line)
-	return locs
-}
-
 // DrawString draws a given text on a given destination image dst.
 //
 // face is the font for text rendering.
@@ -307,10 +246,11 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		}
 	}
 
+	mBounds := getGlyphBounds(face, 'M')
 	b := BoundString(face, text)
 	w, h := float64(width), float64(height)
-	ox, oy := float64(b.Min.X), float64(b.Min.Y)
-	tw, th := float64(b.Dx()), float64(b.Dy())
+	ox, oy := float64(b.Min.X), float64(mBounds.Min.Y.Round())
+	tw, th := float64(b.Dx()), float64(mBounds.Max.Y.Round())-float64(mBounds.Min.Y.Round())
 
 	var tx, ty float64
 
@@ -342,12 +282,12 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 	var dx, dy fixed.Int26_6
 	prevR := rune(-1)
 
-	faceHeight := face.Metrics().Height
-
 	var cursorImg *ebiten.Image
 	if cursor > -1 {
 		cursorImg = getGlyphImage(face, '|')
 	}
+
+	lineHeight := face.Metrics().Height
 
 	for i, r := range text {
 		if prevR >= 0 {
@@ -355,7 +295,7 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		}
 		if r == '\n' {
 			dx = 0
-			dy += faceHeight
+			dy += lineHeight
 			prevR = rune(-1)
 			if r == '\n' {
 				continue
@@ -366,7 +306,8 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		drawGlyph(dst, face, r, img, dx, dy, &op)
 
 		if cursor == i+1 {
-			drawGlyph(dst, face, '|', cursorImg, dx, dy, &op)
+			b := getGlyphBounds(face, r)
+			drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy, &op)
 		}
 
 		dx += glyphAdvance(face, r)

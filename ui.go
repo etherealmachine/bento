@@ -234,7 +234,10 @@ func (n *Box) templateAttr(attr string, def bool) bool {
 }
 
 func (n *Box) toggleDebug() {
-	n.debug = !n.debug
+	n.visit(func(n *Box) error {
+		n.debug = !n.debug
+		return nil
+	})
 }
 
 func (n *Box) dump() {
