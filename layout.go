@@ -56,7 +56,7 @@ func (n *Box) size() {
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.tag == "textarea" {
-		bounds := text.BoundString(n.style.Font, n.attrs["value"])
+		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	} else if n.tag != "row" && n.tag != "col" {
@@ -131,6 +131,9 @@ func (n *Box) grow() {
 }
 
 func (n *Box) fillWidth(w int) {
+	if w < n.OuterWidth {
+		return
+	}
 	_, mr, _, ml := n.style.margin()
 	_, pr, _, pl := n.style.padding()
 	n.OuterWidth = w
@@ -139,6 +142,9 @@ func (n *Box) fillWidth(w int) {
 }
 
 func (n *Box) fillHeight(h int) {
+	if h < n.OuterHeight {
+		return
+	}
 	mt, _, mb, _ := n.style.margin()
 	pt, _, pb, _ := n.style.padding()
 	n.OuterHeight = h

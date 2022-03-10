@@ -321,7 +321,7 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 
 func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	m := face.Metrics()
-	faceHeight := m.Height
+	lineHeight := m.Height
 
 	sx := glyphAdvance(face, ' ')
 
@@ -338,7 +338,7 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 
 		if mw > 0 && fx+width > mw {
 			fx = 0
-			fy += faceHeight
+			fy += lineHeight
 			prevR = rune(-1)
 		}
 		for _, r := range w {
@@ -347,7 +347,7 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 			}
 			if r == '\n' {
 				fx = fixed.I(0)
-				fy += faceHeight
+				fy += lineHeight
 				prevR = rune(-1)
 				continue
 			}
@@ -370,6 +370,7 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 		bounds = bounds.Union(sb)
 		fx += sx
 	}
+
 	return image.Rect(
 		int(math.Floor(fixed26_6ToFloat64(bounds.Min.X))),
 		int(math.Floor(fixed26_6ToFloat64(bounds.Min.Y))),
@@ -402,12 +403,12 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 	op.ColorM.Scale(float64(cr)/float64(ca), float64(cg)/float64(ca), float64(cb)/float64(ca), float64(ca)/0xffff)
 
-	var dx fixed.Int26_6
+	var dx, dy fixed.Int26_6
 	prevR := rune(-1)
 
-	faceHeight := face.Metrics().Height
-	b := BoundParagraph(face, text, maxWidth)
-	dy := -fixed.I(b.Min.Y)
+	lineHeight := face.Metrics().Height
+	mBounds := getGlyphBounds(face, 'M')
+	op.GeoM.Translate(0, float64((mBounds.Max.Y - mBounds.Min.Y).Round()))
 
 	words := strings.Split(text, " ")
 	var i int
@@ -419,7 +420,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 		if mw > 0 && dx+width > mw {
 			dx = 0
-			dy += faceHeight
+			dy += lineHeight
 			prevR = rune(-1)
 		}
 
@@ -429,7 +430,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 			}
 			if r == '\n' {
 				dx = 0
-				dy += faceHeight
+				dy += lineHeight
 				prevR = rune(-1)
 				continue
 			}
@@ -449,7 +450,8 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		}
 
 		if cursor == i+1 {
-			drawGlyph(dst, face, '|', cursorImg, dx, dy, &op)
+			b := getGlyphBounds(face, prevR)
+			drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy, &op)
 		}
 
 		i++
