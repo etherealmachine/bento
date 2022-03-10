@@ -13,11 +13,11 @@ var (
 )
 
 type state struct {
-	buttonState          ButtonState
-	inputState           ButtonState
-	cursorRow, cursorCol int
-	scrollPosition       int
-	cursorTime           int64
+	buttonState    ButtonState
+	inputState     ButtonState
+	cursor         int
+	scrollPosition int
+	cursorTime     int64
 }
 
 func (n *Box) updateState(keys []ebiten.Key) {
@@ -53,19 +53,23 @@ func (n *Box) updateInput() {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
 				if s != "" {
-					v = v[:n.cursorCol] + s + v[n.cursorCol:]
-					n.cursorCol++
+					v = v[:n.cursor] + s + v[n.cursor:]
+					n.cursor++
 					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursorCol > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
-					v = v[:n.cursorCol-1] + v[n.cursorCol:]
-					n.cursorCol--
+				} else if n.cursor > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
+					v = v[:n.cursor-1] + v[n.cursor:]
+					n.cursor--
 					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursorCol > 0 && k == ebiten.KeyLeft {
-					n.cursorCol--
+				} else if n.cursor > 0 && k == ebiten.KeyLeft {
+					n.cursor--
 					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursorCol < len(v) && k == ebiten.KeyRight {
-					n.cursorCol++
+				} else if n.cursor < len(v) && k == ebiten.KeyRight {
+					n.cursor++
 					n.cursorTime = time.Now().UnixMilli()
+				} else if k == ebiten.KeyUp {
+					// TODO
+				} else if k == ebiten.KeyDown {
+					// TODO
 				}
 			}
 		}
@@ -187,6 +191,8 @@ func keyToString(k ebiten.Key, shift bool) string {
 			return "~"
 		case ebiten.KeySpace:
 			return " "
+		case ebiten.KeyEnter:
+			return "\n"
 		}
 	}
 	switch k {
@@ -286,6 +292,8 @@ func keyToString(k ebiten.Key, shift bool) string {
 		return "`"
 	case ebiten.KeySpace:
 		return " "
+	case ebiten.KeyEnter:
+		return "\n"
 	}
 	return ""
 }

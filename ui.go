@@ -168,6 +168,9 @@ func Build(c Component) (*Box, error) {
 				n.children[i] = clone
 			}
 		}
+		if n.tag == "input" || n.tag == "textarea" {
+			n.cursor = len(n.attrs["value"])
+		}
 		return nil
 	})
 }

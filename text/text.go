@@ -378,10 +378,23 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	)
 }
 
-func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth int, op ebiten.DrawImageOptions) {
+func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth, cursor int, op ebiten.DrawImageOptions) {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return
+	}
+
+	if len(text) == 0 {
+		if cursor >= 0 {
+			text = "|"
+		} else {
+			return
+		}
+	}
+
+	var cursorImg *ebiten.Image
+	if cursor > -1 {
+		cursorImg = getGlyphImage(face, '|')
 	}
 
 	sx := glyphAdvance(face, ' ')
@@ -397,6 +410,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 	dy := -fixed.I(b.Min.Y)
 
 	words := strings.Split(text, " ")
+	var i int
 	for _, w := range words {
 		var width fixed.Int26_6
 		for _, r := range w {
@@ -422,10 +436,23 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 			img := getGlyphImage(face, r)
 			drawGlyph(dst, face, r, img, dx, dy, &op)
+
+			if cursor == i+1 {
+				b := getGlyphBounds(face, r)
+				drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy, &op)
+			}
+
 			dx += glyphAdvance(face, r)
+			i++
 
 			prevR = r
 		}
+
+		if cursor == i+1 {
+			drawGlyph(dst, face, '|', cursorImg, dx, dy, &op)
+		}
+
+		i++
 		dx += sx
 	}
 

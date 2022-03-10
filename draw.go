@@ -66,7 +66,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
 		txt := n.templateContent()
-		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, *op)
+		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, -1, *op)
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
@@ -74,19 +74,19 @@ func (n *Box) Draw(img *ebiten.Image) {
 		if txt == "" && n.inputState != Active {
 			txt = n.attrs["placeholder"]
 		}
-		if n.tag == "input" {
-			cursor := -1
-			if n.inputState == Active {
-				t := time.Now().UnixMilli()
-				if t-n.cursorTime <= 1000 {
-					cursor = n.cursorCol
-				} else if t-n.cursorTime >= 2000 {
-					n.cursorTime = t
-				}
+		cursor := -1
+		if n.inputState == Active {
+			t := time.Now().UnixMilli()
+			if t-n.cursorTime <= 1000 {
+				cursor = n.cursor
+			} else if t-n.cursorTime >= 2000 {
+				n.cursorTime = t
 			}
+		}
+		if n.tag == "input" {
 			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
 		} else {
-			text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, *op)
+			text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, cursor, *op)
 		}
 	case "row", "col":
 	default:
