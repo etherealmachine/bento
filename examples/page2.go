@@ -87,12 +87,10 @@ func (p *Page2) UI() string {
 				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
 			</row>
 			<Input onChange="Change" grow="1 0" placeholder="Title" color="#ffffff" />
-			<textarea grow="1" value="Content" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" />
+			<textarea grow="1" value="Content" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6em" scrollbar="scrollbar.png 6" />
 		</col>
-		<Text border="frame.png 10">
-	{{index .Paragraphs 1}}
-	{{index .Paragraphs 2}}
-		</Text>
+		<Text border="frame.png 10">{{index .Paragraphs 1}}
+{{index .Paragraphs 2}}</Text>
 		<row grow="1 0">
 			<Button onClick="Click">Clicks: {{.Clicks}}</Button>
 			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>

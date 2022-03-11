@@ -50,15 +50,6 @@ func (n *Box) Draw(img *ebiten.Image) {
 		drawBox(img, n.ContentWidth, n.ContentHeight, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true, op)
 	}
 
-	var tmpImage *ebiten.Image
-	var tmpOp *ebiten.DrawImageOptions
-	if n.style.MaxHeight > 0 && n.OuterHeight > n.style.MaxHeight {
-		tmpImage = img
-		tmpOp = op
-		img = ebiten.NewImage(n.OuterWidth, n.OuterHeight)
-		op = new(ebiten.DrawImageOptions)
-	}
-
 	switch n.tag {
 	case "button":
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
@@ -66,7 +57,10 @@ func (n *Box) Draw(img *ebiten.Image) {
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
 		txt := n.templateContent()
-		text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, -1, *op)
+		if text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, n.style.MaxHeight, -1, n.scrollPosition, *op) {
+			op.GeoM.Translate(float64(pl), -float64(pt))
+			n.drawScrollbar(img, op)
+		}
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
@@ -85,8 +79,9 @@ func (n *Box) Draw(img *ebiten.Image) {
 		}
 		if n.tag == "input" {
 			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
-		} else {
-			text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, cursor, *op)
+		} else if text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, n.style.MaxHeight, cursor, n.scrollPosition, *op) {
+			op.GeoM.Translate(float64(pl), -float64(pt))
+			n.drawScrollbar(img, op)
 		}
 	case "row", "col":
 	default:
@@ -105,21 +100,6 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	for _, c := range n.children {
 		c.Draw(img)
-	}
-
-	if tmpImage != nil {
-		w, h := n.style.MaxWidth, n.style.MaxHeight
-		if w == 0 {
-			w = n.OuterWidth
-		}
-		if h == 0 {
-			h = n.OuterHeight
-		}
-		// TODO: Slow
-		cropped := ebiten.NewImageFromImage(img.SubImage(image.Rect(0, 0, w, h)))
-		tmpImage.DrawImage(cropped, tmpOp)
-		// TODO: Draw scrollbar
-		img.Dispose()
 	}
 
 	if n.debug && n.parent == nil {
@@ -142,4 +122,21 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 		ebitenutil.DrawLine(img, x2, y2, x2, y1, color.Black)
 		ebitenutil.DrawLine(img, x2, y2, x1, y2, color.Black)
 	}
+}
+
+func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
+	for i, r := range n.scrollRects() {
+		btn := n.style.Scrollbar[int(n.scrollState[i])][i]
+		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
+	}
+}
+
+func (n *Box) scrollRects() [4]image.Rectangle {
+	var rects [4]image.Rectangle
+	s := n.style.Scrollbar[0][0].Width()
+	rects[0] = image.Rect(n.ContentWidth, 0, n.ContentWidth+s, s)                           // top button
+	rects[1] = image.Rect(n.ContentWidth, s, n.ContentWidth+s, n.InnerHeight-s)             // track
+	rects[2] = image.Rect(0, 0, 0, 0)                                                       // handle
+	rects[3] = image.Rect(n.ContentWidth, n.InnerHeight-s, n.ContentWidth+s, n.InnerHeight) // bottom button
+	return rects
 }

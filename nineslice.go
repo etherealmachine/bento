@@ -95,6 +95,14 @@ func (n *NineSlice) Draw(screen *ebiten.Image, x, y, width, height int, op *ebit
 	}
 }
 
+func (n *NineSlice) Width() int {
+	return n.widths[0] + n.widths[1] + n.widths[2]
+}
+
+func (n *NineSlice) Height() int {
+	return n.heights[0] + n.heights[1] + n.heights[2]
+}
+
 func (n *NineSlice) drawTile(screen *ebiten.Image, tile *ebiten.Image, tx int, ty int, sw int, sh int, tw int, th int, op *ebiten.DrawImageOptions) {
 	if sw <= 0 || sh <= 0 || tw <= 0 || th <= 0 {
 		return

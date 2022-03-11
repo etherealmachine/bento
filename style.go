@@ -209,16 +209,16 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing maxWidth: %s", err)
 		}
 	}
-	if s.MaxWidth != 0 && s.node.tag != "p" {
-		return fmt.Errorf("invalid tag %s: max width can only apply to a paragraph (p) tag", s.node.tag)
+	if s.MaxWidth != 0 && s.node.tag != "p" && s.node.tag != "textarea" {
+		return fmt.Errorf("invalid tag %s: max width can only apply to paragraph (p) or textarea", s.node.tag)
 	}
 	if s.MaxHeight == 0 {
 		if s.MaxHeight, err = parseSize(s.Attrs["maxHeight"], s.Font); err != nil {
 			return fmt.Errorf("error parsing maxHeight: %s", err)
 		}
 	}
-	if s.MaxHeight != 0 && s.node.tag != "p" {
-		return fmt.Errorf("invalid tag %s: max height can only apply to a paragraph (p) tag", s.node.tag)
+	if s.MaxHeight != 0 && s.node.tag != "p" && s.node.tag != "textarea" {
+		return fmt.Errorf("invalid tag %s: max height can only apply to paragraph (p) or textarea", s.node.tag)
 	}
 	if spec := s.Attrs["justify"]; spec != "" {
 		if s.HJust, s.VJust, err = parseJustification(spec); err != nil {
@@ -408,16 +408,15 @@ func ParseScrollbar(spec string) (*[3][4]*NineSlice, error) {
 	if spec == "" {
 		return nil, nil
 	}
-	img, widths, heights, err := loadImageFromSpec(spec, 4)
+	img, widths, _, err := loadImageFromSpec(spec, 4)
 	if err != nil {
 		return nil, err
 	}
 	var states [3][4]*NineSlice
 	w := widths[0] + widths[1] + widths[2]
-	h := heights[0] + heights[1] + heights[2]
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 4; j++ {
-			states[i][j] = NewNineSlice(img, *widths, *heights, w*i, j*h)
+			states[i][j] = NewNineSlice(img, *widths, *widths, w*i, w*j)
 		}
 	}
 	return &states, nil

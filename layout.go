@@ -39,6 +39,7 @@ func (n *Box) size() {
 		n.OuterHeight = 0
 		return
 	}
+	scrollbar := false
 	if n.tag == "button" || n.tag == "text" {
 		bounds := text.BoundString(n.style.Font, n.templateContent())
 		n.ContentWidth = bounds.Dx()
@@ -47,6 +48,7 @@ func (n *Box) size() {
 		bounds := text.BoundParagraph(n.style.Font, n.templateContent(), n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
+		scrollbar = n.ContentHeight > n.style.MaxHeight
 	} else if n.tag == "img" && n.style.Image != nil {
 		bounds := n.style.Image.Bounds()
 		n.ContentWidth = bounds.Dx()
@@ -59,6 +61,7 @@ func (n *Box) size() {
 		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
+		scrollbar = n.ContentHeight > n.style.MaxHeight
 	} else if n.tag != "row" && n.tag != "col" {
 		log.Fatalf("can't size %s", n.tag)
 	}
@@ -78,6 +81,11 @@ func (n *Box) size() {
 	pt, pr, pb, pl := n.style.padding()
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
+	if scrollbar && n.style.Scrollbar != nil {
+		btn := n.style.Scrollbar[int(n.buttonState)][0]
+		w := btn.Width()
+		n.InnerWidth += w
+	}
 	n.OuterWidth = n.InnerWidth + ml + mr
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
