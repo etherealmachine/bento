@@ -459,7 +459,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 			if line >= scroll {
 				oy := fixed.I(scroll).Mul(lineHeight)
-				if mh > 0 && dy-oy > mh {
+				if mh > 0 && dy-oy+lineHeight > mh {
 					cleanCache(face)
 					return true
 				}

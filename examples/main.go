@@ -50,6 +50,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	ebiten.SetWindowSize(1280, 900)
+	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowTitle("Bento Demo")
 	ui, err := bento.Build(&Demo{})
 	if err != nil {

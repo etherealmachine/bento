@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	sizeSpec = regexp.MustCompile(`(\d+)(em|px|%)`)
+	sizeSpec = regexp.MustCompile(`(\d+)(em|px|lh)`)
 )
 
 type Justification string
@@ -121,6 +121,13 @@ func (s *Style) justification() (Justification, Justification) {
 	return hj, vj
 }
 
+func (s *Style) scrollBarWidth() int {
+	if s != nil && s.node.ContentHeight > s.MaxHeight && s.Scrollbar != nil {
+		return s.Scrollbar[0][0].Width()
+	}
+	return 0
+}
+
 func (s *Style) growth() (int, int) {
 	hg, vg := 0, 0
 	if s != nil {
@@ -142,6 +149,7 @@ func (n *Box) styleSize() {
 	if n.style == nil {
 		return
 	}
+	n.ContentWidth += n.style.scrollBarWidth()
 	if n.style.MinWidth > 0 {
 		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
 	}
@@ -521,10 +529,13 @@ func parseSize(spec string, f font.Face) (int, error) {
 	matches := sizeSpec.FindStringSubmatch(spec)
 	if len(matches) == 3 {
 		size, _ := strconv.Atoi(matches[1])
-		if matches[2] == "px" {
+		switch matches[2] {
+		case "px":
 			return size, nil
-		} else {
-			return size * text.BoundString(f, "—").Dx(), nil
+		case "em":
+			return size * text.BoundString(f, "M").Dx(), nil
+		case "lh":
+			return size * f.Metrics().Height.Round(), nil
 		}
 	}
 	return 0, nil

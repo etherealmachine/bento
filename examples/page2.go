@@ -40,7 +40,7 @@ func (p *Page2) Text() *bento.Style {
 		Scrollbar: scrollbar,
 		Attrs: map[string]string{
 			"maxWidth":  "50em",
-			"maxHeight": "8em",
+			"maxHeight": "8lh",
 		},
 	}
 }
@@ -84,12 +84,12 @@ func (p *Page2) UI() string {
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{.Title}}</text>
 			<row>
 				<img src="profile.png"/>
-				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="40em">{{.Content}}</p>
+				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="80em">{{.Content}}</p>
 			</row>
 			<Input onChange="Change" grow="1 0" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6em" scrollbar="scrollbar.png 6" />
 		</col>
-		<Text border="frame.png 10">{{index .Paragraphs 1}}
+		<Text grow="0 1" border="frame.png 10">{{index .Paragraphs 1}}
 {{index .Paragraphs 2}}</Text>
 		<row grow="1 0">
 			<Button onClick="Click">Clicks: {{.Clicks}}</Button>
