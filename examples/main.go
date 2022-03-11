@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	_ "image/png"
-	"io/ioutil"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -11,18 +9,19 @@ import (
 
 	"github.com/etherealmachine/bento"
 	"github.com/hajimehoshi/ebiten/v2"
+
+	_ "embed"
+	_ "image/png"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
+//go:embed loomings.txt
+var loomings string
 var paragraphs []string
 
 func init() {
-	bs, err := ioutil.ReadFile("loomings.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	paragraphs = strings.Split(string(bs), "\n")
+	paragraphs = strings.Split(loomings, "\n")
 }
 
 type Game struct {

@@ -129,7 +129,8 @@ func getGlyphImage(face font.Face, r rune) *ebiten.Image {
 	return img
 }
 
-func drawGlyph(dst *ebiten.Image, face font.Face, r rune, img *ebiten.Image, dx, dy fixed.Int26_6, op *ebiten.DrawImageOptions) {
+func drawGlyph(dst *ebiten.Image, face font.Face, r rune, dx, dy fixed.Int26_6, op *ebiten.DrawImageOptions) {
+	img := getGlyphImage(face, r)
 	if img == nil {
 		return
 	}
@@ -161,24 +162,16 @@ func drawGlyph(dst *ebiten.Image, face font.Face, r rune, img *ebiten.Image, dx,
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
 func BoundString(face font.Face, text string) image.Rectangle {
-	m := face.Metrics()
-	faceHeight := m.Height
-
 	fx, fy := fixed.I(0), fixed.I(0)
 	prevR := rune(-1)
 
 	var bounds fixed.Rectangle26_6
 	for _, r := range text {
+		if r == '\n' {
+			continue
+		}
 		if prevR >= 0 {
 			fx += face.Kern(prevR, r)
-		}
-		if r == '\n' {
-			fx = fixed.I(0)
-			fy += faceHeight
-			prevR = rune(-1)
-			if r == '\n' {
-				continue
-			}
 		}
 
 		b := getGlyphBounds(face, r)
@@ -217,9 +210,6 @@ func BoundString(face font.Face, text string) image.Rectangle {
 // cursor will draw a | character at the given boundary between two characters, -1 means no cursor
 //
 // op sets the transform used to control placement of the text
-//
-// The '\n' newline character puts the following text on the next line.
-// Line height is based on Metrics().Height of the font.
 //
 // It is OK to call Draw with a same text and a same face at every frame in terms of performance.
 // Glyphs used for rendering are cached in least-recently-used way.
@@ -276,32 +266,19 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 	var dx, dy fixed.Int26_6
 	prevR := rune(-1)
 
-	var cursorImg *ebiten.Image
-	if cursor > -1 {
-		cursorImg = getGlyphImage(face, '|')
-	}
-
-	lineHeight := face.Metrics().Height
-
 	for i, r := range text {
+		if r == '\n' {
+			continue
+		}
 		if prevR >= 0 {
 			dx += face.Kern(prevR, r)
 		}
-		if r == '\n' {
-			dx = 0
-			dy += lineHeight
-			prevR = rune(-1)
-			if r == '\n' {
-				continue
-			}
-		}
 
-		img := getGlyphImage(face, r)
-		drawGlyph(dst, face, r, img, dx, dy, &op)
+		drawGlyph(dst, face, r, dx, dy, &op)
 
 		if cursor == i+1 {
 			b := getGlyphBounds(face, r)
-			drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy, &op)
+			drawGlyph(dst, face, '|', dx+b.Max.X-b.Min.X, dy, &op)
 		}
 
 		dx += glyphAdvance(face, r)
@@ -412,11 +389,6 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		}
 	}
 
-	var cursorImg *ebiten.Image
-	if cursor > -1 {
-		cursorImg = getGlyphImage(face, '|')
-	}
-
 	sx := glyphAdvance(face, ' ')
 	mw, mh := fixed.I(maxWidth), fixed.I(maxHeight)
 
@@ -463,12 +435,11 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 					cleanCache(face)
 					return true
 				}
-				img := getGlyphImage(face, r)
-				drawGlyph(dst, face, r, img, dx, dy-oy, &op)
+				drawGlyph(dst, face, r, dx, dy-oy, &op)
 
 				if cursor == i+1 {
 					b := getGlyphBounds(face, r)
-					drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy-oy, &op)
+					drawGlyph(dst, face, '|', dx+b.Max.X-b.Min.X, dy-oy, &op)
 				}
 			}
 
@@ -480,8 +451,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 		if line >= scroll && cursor == i+1 {
 			oy := fixed.I(scroll) * lineHeight
-			b := getGlyphBounds(face, prevR)
-			drawGlyph(dst, face, '|', cursorImg, dx+b.Max.X-b.Min.X, dy-oy, &op)
+			drawGlyph(dst, face, '|', dx-sx, dy-oy, &op)
 		}
 
 		i++
