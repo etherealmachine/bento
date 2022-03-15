@@ -222,14 +222,6 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		return nil
 	}
 
-	if len(text) == 0 {
-		if cursor >= 0 {
-			text = "|"
-		} else {
-			return nil
-		}
-	}
-
 	mBounds := getGlyphBounds(face, 'M')
 	b := BoundString(face, text)
 	w, h := float64(width), float64(height)
@@ -264,7 +256,19 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 	op.ColorM.Scale(float64(cr)/float64(ca), float64(cg)/float64(ca), float64(cb)/float64(ca), float64(ca)/0xffff)
 
 	var dx, dy fixed.Int26_6
+
 	prevR := rune(-1)
+
+	var cx fixed.Int26_6
+	if cursor > -1 {
+		cx = glyphAdvance(face, '|')
+	}
+	if cursor == 0 {
+		drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
+		if len(text) == 0 {
+			return nil
+		}
+	}
 
 	for i, r := range text {
 		if r == '\n' {
@@ -276,14 +280,17 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 
 		drawGlyph(dst, face, r, dx, dy, &op)
 
-		if cursor == i+1 {
-			b := getGlyphBounds(face, r)
-			drawGlyph(dst, face, '|', dx+b.Max.X-b.Min.X, dy, &op)
+		if cursor == i {
+			drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 		}
 
 		dx += glyphAdvance(face, r)
 
 		prevR = r
+	}
+
+	if cursor >= len(text) {
+		drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 	}
 
 	cleanCache(face)
@@ -355,6 +362,8 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 // wrapping words to constrain the width and limiting the lines drawn to
 // constrain the height.
 //
+// DrawParagraph returns true if the text overflows the given maxHeight
+//
 // face is the font for text rendering.
 //
 // clr is the color for text rendering.
@@ -381,14 +390,6 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		return false
 	}
 
-	if len(text) == 0 {
-		if cursor >= 0 {
-			text = "|"
-		} else {
-			return false
-		}
-	}
-
 	sx := glyphAdvance(face, ' ')
 	mw, mh := fixed.I(maxWidth), fixed.I(maxHeight)
 
@@ -400,6 +401,17 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 	lineHeight := face.Metrics().Height
 	mBounds := getGlyphBounds(face, 'M')
 	op.GeoM.Translate(0, float64((mBounds.Max.Y - mBounds.Min.Y).Round()))
+
+	var cx fixed.Int26_6
+	if cursor > -1 {
+		cx = glyphAdvance(face, '|')
+	}
+	if cursor == 0 {
+		drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
+		if len(text) == 0 {
+			return false
+		}
+	}
 
 	words := strings.Split(text, " ")
 	var i int
@@ -437,9 +449,8 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 				}
 				drawGlyph(dst, face, r, dx, dy-oy, &op)
 
-				if cursor == i+1 {
-					b := getGlyphBounds(face, r)
-					drawGlyph(dst, face, '|', dx+b.Max.X-b.Min.X, dy-oy, &op)
+				if cursor == i {
+					drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 				}
 			}
 
@@ -449,13 +460,12 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 			prevR = r
 		}
 
-		if line >= scroll && cursor == i+1 {
-			oy := fixed.I(scroll) * lineHeight
-			drawGlyph(dst, face, '|', dx-sx, dy-oy, &op)
-		}
-
 		i++
 		dx += sx
+	}
+
+	if cursor >= len(text) {
+		drawGlyph(dst, face, '|', dx-sx-cx/2, dy, &op)
 	}
 
 	cleanCache(face)
