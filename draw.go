@@ -129,18 +129,18 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 }
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
-	for i, r := range n.scrollRects() {
+	for i, r := range n.scrollRects(0.5) {
 		btn := n.style.Scrollbar[int(n.scrollState[i])][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
 }
 
-func (n *Box) scrollRects() [4]image.Rectangle {
+func (n *Box) scrollRects(scrollPos float64) [4]image.Rectangle {
 	var rects [4]image.Rectangle
 	s := n.style.Scrollbar[0][0].Width()
-	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)                           // top button
-	rects[1] = image.Rect(n.ContentWidth-s, s, n.ContentWidth, n.InnerHeight-s)             // track
-	rects[2] = image.Rect(0, 0, 0, 0)                                                       // handle
-	rects[3] = image.Rect(n.ContentWidth-s, n.InnerHeight-s, n.ContentWidth, n.InnerHeight) // bottom button
+	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)                                                                                 // top button
+	rects[1] = image.Rect(n.ContentWidth-s, s, n.ContentWidth, n.InnerHeight-s)                                                                   // track
+	rects[2] = image.Rect(n.ContentWidth-s, int(float64(n.InnerHeight)*scrollPos)-s/2, n.ContentWidth, int(float64(n.InnerHeight)*scrollPos)+s/2) // handle
+	rects[3] = image.Rect(n.ContentWidth-s, n.InnerHeight-s, n.ContentWidth, n.InnerHeight)                                                       // bottom button
 	return rects
 }

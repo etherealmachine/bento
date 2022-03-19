@@ -182,6 +182,15 @@ func (n *Box) justify() {
 	for _, c := range n.children {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
+		ox, oy := c.style.OffsetX, c.style.OffsetY
+		if ox < 0 {
+			ox = n.InnerWidth - c.OuterWidth + ox + 1
+		}
+		if oy < 0 {
+			oy = n.InnerHeight - c.OuterHeight + oy + 1
+		}
+		c.X += ox
+		c.Y += oy
 	}
 	extents := make([][2]int, len(n.children))
 	for i, c := range n.children {

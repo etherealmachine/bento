@@ -71,6 +71,7 @@ type Style struct {
 	HGrow, VGrow        int
 	Margin, Padding     *Spacing
 	Color               color.Color
+	OffsetX, OffsetY    int
 	Hidden              bool
 	Display             bool
 	node                *Box
@@ -243,6 +244,11 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing color: %s", err)
 		}
 	}
+	if spec := s.Attrs["offset"]; spec != "" {
+		if s.OffsetX, s.OffsetY, err = parseOffset(spec); err != nil {
+			return fmt.Errorf("error parsing float: %s", err)
+		}
+	}
 	if s.Button == nil {
 		if s.Button, err = ParseButton(s.Attrs["btn"]); err != nil {
 			return fmt.Errorf("error parsing button: %s", err)
@@ -361,6 +367,23 @@ func parseGrow(spec string) (int, int, error) {
 		return 0, 0, fmt.Errorf("too many parameters for grow, expected at most 2: %s", spec)
 	}
 	return hg, vg, err
+}
+
+func parseOffset(spec string) (int, int, error) {
+	if spec == "" {
+		return 0, 0, nil
+	}
+	a := strings.Split(spec, " ")
+	var x, y int
+	var err error
+	x, err = strconv.Atoi(a[0])
+	y = x
+	if err == nil && len(a) == 2 {
+		y, err = strconv.Atoi(a[1])
+	} else if len(a) > 2 {
+		return 0, 0, fmt.Errorf("too many parameters for grow, expected at most 2: %s", spec)
+	}
+	return x, y, err
 }
 
 func loadImage(spec string) (*ebiten.Image, error) {

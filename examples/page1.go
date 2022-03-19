@@ -70,7 +70,9 @@ func (p *Page1) UI() string {
 		</row>
 		<row grow="2" justify="end center">
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">Lorem Ipsum</text>
-			<img src="profile.png" />
+			<img src="profile.png" margin="4px" padding="8px">
+				<button onClick="EditProfile" color="#ffffff" margin="4px" padding="12px" btn="button.png 6" offset="-1 -1">Edit</button>
+			</img>
 		</row>
 		<row grow="1 0" justify="between">
 			<button onClick="Click" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Clicks: {{.Clicks}}</button>

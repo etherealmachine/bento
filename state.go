@@ -85,7 +85,7 @@ func (n *Box) updateInput() {
 func (n *Box) updateScroll() {
 	mt, _, _, ml := n.style.margin()
 	pt, _, _, pl := n.style.padding()
-	rects := n.scrollRects()
+	rects := n.scrollRects(0.5)
 	for i := 0; i < 4; i++ {
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(n.X+ml+pl+pl, n.Y+mt+pt-pt))
