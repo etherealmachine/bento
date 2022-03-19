@@ -58,7 +58,7 @@ func (n *Box) updateInput() {
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
-				if s != "" {
+				if s != "" && s != "\n" {
 					v = v[:n.cursor] + s + v[n.cursor:]
 					n.cursor++
 					n.cursorTime = time.Now().UnixMilli()
@@ -88,6 +88,9 @@ func (n *Box) updateScroll() {
 	pt, _, _, pl := n.style.padding()
 	rects := n.scrollRects(n.scrollPosition)
 	for i := 0; i < 4; i++ {
+		if i == 2 {
+			continue
+		}
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(n.X+ml+pl+pl, n.Y+mt+pt-pt))
 		n.scrollState[i] = buttonState(r)
