@@ -61,7 +61,8 @@ func (n *Box) Draw(img *ebiten.Image) {
 		if n.style.MaxHeight != 0 {
 			maxHeight = max(maxHeight, n.ContentHeight)
 		}
-		if text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, maxHeight, -1, n.scrollPosition, *op) {
+		n.scrollPosition = text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, maxHeight, -1, n.scrollLine, *op)
+		if n.scrollPosition >= 0 {
 			op.GeoM.Translate(float64(pl), -float64(pt))
 			n.drawScrollbar(img, op)
 		}
@@ -83,9 +84,12 @@ func (n *Box) Draw(img *ebiten.Image) {
 		}
 		if n.tag == "input" {
 			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
-		} else if text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, n.style.MaxHeight, cursor, n.scrollPosition, *op) {
-			op.GeoM.Translate(float64(pl), -float64(pt))
-			n.drawScrollbar(img, op)
+		} else {
+			n.scrollPosition = text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, n.style.MaxHeight, cursor, n.scrollLine, *op)
+			if n.scrollPosition >= 0 {
+				op.GeoM.Translate(float64(pl), -float64(pt))
+				n.drawScrollbar(img, op)
+			}
 		}
 	case "row", "col":
 	default:
@@ -129,7 +133,7 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 }
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
-	for i, r := range n.scrollRects(0.5) {
+	for i, r := range n.scrollRects(n.scrollPosition) {
 		btn := n.style.Scrollbar[int(n.scrollState[i])][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
@@ -138,9 +142,15 @@ func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
 func (n *Box) scrollRects(scrollPos float64) [4]image.Rectangle {
 	var rects [4]image.Rectangle
 	s := n.style.Scrollbar[0][0].Width()
-	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)                                                                                 // top button
-	rects[1] = image.Rect(n.ContentWidth-s, s, n.ContentWidth, n.InnerHeight-s)                                                                   // track
-	rects[2] = image.Rect(n.ContentWidth-s, int(float64(n.InnerHeight)*scrollPos)-s/2, n.ContentWidth, int(float64(n.InnerHeight)*scrollPos)+s/2) // handle
-	rects[3] = image.Rect(n.ContentWidth-s, n.InnerHeight-s, n.ContentWidth, n.InnerHeight)                                                       // bottom button
+	sf := float64(s)
+	trackHeight := float64(n.InnerHeight) - 2.5*sf
+	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)               // top button
+	rects[1] = image.Rect(n.ContentWidth-s, s, n.ContentWidth, n.InnerHeight-s) // track
+	rects[2] = image.Rect(
+		n.ContentWidth-s,
+		int(trackHeight*scrollPos+0.75*sf),
+		n.ContentWidth,
+		int(trackHeight*scrollPos+1.75*sf)) // handle
+	rects[3] = image.Rect(n.ContentWidth-s, n.InnerHeight-s, n.ContentWidth, n.InnerHeight) // bottom button
 	return rects
 }

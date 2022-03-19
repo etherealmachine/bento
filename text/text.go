@@ -362,15 +362,15 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 // wrapping words to constrain the width and limiting the lines drawn to
 // constrain the height.
 //
-// DrawParagraph returns true if the text overflows the given maxHeight
+// DrawParagraph returns the scroll position in [0, 1] if maxHeight and scroll are non-negative
 //
 // face is the font for text rendering.
 //
 // clr is the color for text rendering.
 //
-// maxWidth and maxHeight (both in pixels), when non-zero, turn on word wrapping and line limiting
+// maxWidth and maxHeight (both in pixels), when positive, turn on word wrapping and line limiting
 //
-// cursor will draw a | character at the given boundary between two characters, -1 means no cursor
+// cursor will draw a | character at the given boundary between two characters, when negative no cursor will be drawn
 //
 // scroll sets the starting line and can be used with maxHeight to draw a scrollable window
 //
@@ -384,10 +384,10 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth, maxHeight, cursor, scroll int, op ebiten.DrawImageOptions) bool {
+func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth, maxHeight, cursor, scroll int, op ebiten.DrawImageOptions) float64 {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
-		return false
+		return -1
 	}
 
 	sx := glyphAdvance(face, ' ')
@@ -409,13 +409,14 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 	if cursor == 0 {
 		drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 		if len(text) == 0 {
-			return false
+			return -1
 		}
 	}
 
 	words := strings.Split(text, " ")
 	var i int
 	var line int
+	endLine := -1
 	for _, w := range words {
 		var width fixed.Int26_6
 		for _, r := range w {
@@ -443,14 +444,12 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 			if line >= scroll {
 				oy := fixed.I(scroll).Mul(lineHeight)
-				if mh > 0 && dy-oy+lineHeight > mh {
-					cleanCache(face)
-					return true
-				}
-				drawGlyph(dst, face, r, dx, dy-oy, &op)
-
-				if cursor == i {
-					drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
+				if mh <= 0 || dy-oy+lineHeight <= mh {
+					drawGlyph(dst, face, r, dx, dy-oy, &op)
+					if cursor == i {
+						drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
+					}
+					endLine = line
 				}
 			}
 
@@ -470,7 +469,13 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 
 	cleanCache(face)
 
-	return scroll > 0
+	if height := dy.Ceil(); maxHeight > 0 && scroll >= 0 && height > maxHeight {
+		if endLine >= line {
+			return 1
+		}
+		return float64(scroll) / float64(line-(endLine-scroll))
+	}
+	return -1
 }
 
 // cacheSoftLimit indicates the soft limit of the number of glyphs in the cache.

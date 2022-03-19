@@ -18,7 +18,8 @@ type state struct {
 	inputState     ButtonState
 	scrollState    [4]ButtonState
 	cursor         int
-	scrollPosition int
+	scrollLine     int
+	scrollPosition float64
 	cursorTime     int64
 }
 
@@ -85,19 +86,19 @@ func (n *Box) updateInput() {
 func (n *Box) updateScroll() {
 	mt, _, _, ml := n.style.margin()
 	pt, _, _, pl := n.style.padding()
-	rects := n.scrollRects(0.5)
+	rects := n.scrollRects(n.scrollPosition)
 	for i := 0; i < 4; i++ {
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(n.X+ml+pl+pl, n.Y+mt+pt-pt))
 		n.scrollState[i] = buttonState(r)
 		if n.scrollState[i] == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if i == 0 {
-				n.scrollPosition--
-				if n.scrollPosition < 0 {
-					n.scrollPosition = 0
+				n.scrollLine--
+				if n.scrollLine < 0 {
+					n.scrollLine = 0
 				}
-			} else if i == 3 {
-				n.scrollPosition++
+			} else if i == 3 && n.scrollPosition < 1 {
+				n.scrollLine++
 			}
 		}
 	}
