@@ -182,7 +182,10 @@ func (n *Box) justify() {
 	for _, c := range n.children {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
-		ox, oy := c.style.OffsetX, c.style.OffsetY
+		var ox, oy int
+		if c.style != nil {
+			ox, oy = c.style.OffsetX, c.style.OffsetY
+		}
 		if ox < 0 {
 			ox = n.InnerWidth - c.OuterWidth + ox + 1
 		}
