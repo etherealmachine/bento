@@ -23,12 +23,6 @@ func (n *Box) innerRect() image.Rectangle {
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
-func (n *Box) contentRect() image.Rectangle {
-	mt, _, _, ml := n.style.margin()
-	pt, _, _, pl := n.style.padding()
-	return image.Rect(n.X+ml+pl, n.Y+mt+pt, n.X+ml+pl+n.ContentWidth, n.Y+mt+pt+n.ContentHeight)
-}
-
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0

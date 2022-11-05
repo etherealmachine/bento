@@ -13,10 +13,23 @@ var (
 	Scrollspeed = 0.1
 )
 
+type State int
+
+const (
+	Idle     = State(0)
+	Hover    = State(1)
+	Active   = State(2)
+	Disabled = State(3)
+)
+
+type Event struct {
+	X, Y int
+	Box  *Box
+}
+
 type state struct {
-	buttonState    ButtonState
-	inputState     ButtonState
-	scrollState    [4]ButtonState
+	state          State
+	scrollState    [4]State
 	cursor         int
 	scrollLine     int
 	scrollPosition float64
@@ -24,36 +37,40 @@ type state struct {
 }
 
 func (n *Box) updateState(keys []ebiten.Key) {
-	switch n.tag {
-	case "button":
-		n.updateButton()
-	case "input", "textarea":
+	if n.tag == "input" || n.tag == "textarea" {
 		n.updateInput()
+	} else {
+		n.state.state = getState(n.innerRect())
 	}
 	if n.style.Scrollbar != nil {
 		n.updateScroll()
 	}
-}
-
-func (n *Box) updateButton() {
-	n.buttonState = buttonState(n.innerRect())
-	if n.buttonState == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
 		attr := n.attrs["onClick"]
 		m := reflect.ValueOf(n.component).MethodByName(attr)
 		if m.IsValid() {
-			m.Call(nil)
+			var args []reflect.Value
+			if m.Type().NumIn() == 1 {
+				args = []reflect.Value{reflect.ValueOf(&Event{
+					X:   x - n.X,
+					Y:   y - n.Y,
+					Box: n,
+				})}
+			}
+			m.Call(args)
 		}
 	}
 }
 
 func (n *Box) updateInput() {
-	state := buttonState(n.innerRect())
+	state := getState(n.innerRect())
 	if state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		n.inputState = Active
-	} else if n.inputState != Active || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		n.inputState = state
+		n.state.state = Active
+	} else if n.state.state != Active || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		n.state.state = state
 	}
-	if n.inputState == Active {
+	if n.state.state == Active {
 		v := n.attrs["value"]
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
@@ -93,7 +110,7 @@ func (n *Box) updateScroll() {
 		}
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(n.X+ml+pl+pl, n.Y+mt+pt-pt))
-		n.scrollState[i] = buttonState(r)
+		n.scrollState[i] = getState(r)
 		if n.scrollState[i] == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if i == 0 {
 				n.scrollLine--

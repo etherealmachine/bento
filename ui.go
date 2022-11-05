@@ -1,5 +1,5 @@
 /*
-	Bento is an XML based UI builder for Ebiten
+Bento is an XML based UI builder for Ebiten
 */
 package bento
 
@@ -41,15 +41,6 @@ type Box struct {
 	content     string
 	contentTmpl *template.Template
 }
-
-type ButtonState int
-
-const (
-	Idle     = ButtonState(0)
-	Hover    = ButtonState(1)
-	Active   = ButtonState(2)
-	Disabled = ButtonState(3)
-)
 
 func (n *Box) clone(parent *Box) *Box {
 	attrs := make(map[string]string)
@@ -271,7 +262,7 @@ func inside(r image.Rectangle, x, y int) bool {
 	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
 }
 
-func buttonState(rect image.Rectangle) ButtonState {
+func getState(rect image.Rectangle) State {
 	x, y := ebiten.CursorPosition()
 	if inside(rect, x, y) {
 		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {

@@ -39,9 +39,9 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.tag {
 	case "button":
-		n.style.Button[int(n.buttonState)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Button[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
-		n.style.Input[int(n.inputState)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Input[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
@@ -70,11 +70,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
 		txt := n.attrs["value"]
-		if txt == "" && n.inputState != Active {
+		if txt == "" && n.state.state != Active {
 			txt = n.attrs["placeholder"]
 		}
 		cursor := -1
-		if n.inputState == Active {
+		if n.state.state == Active {
 			t := time.Now().UnixMilli()
 			if t-n.cursorTime <= 1000 {
 				cursor = n.cursor
@@ -100,10 +100,13 @@ func (n *Box) Draw(img *ebiten.Image) {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(n.X), float64(n.Y))
 		// Annotate
-		text.DrawString(
-			img,
-			fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight),
-			text.Font("mono", 10), color.Black, n.OuterWidth, n.OuterHeight, text.Start, text.Start, -1, *op)
+		font := text.Font("mono", 18)
+		txt := fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight)
+		bounds := text.BoundString(font, txt)
+		drawBox(img, bounds.Dx()+8, bounds.Dy()+4, color.White, false, op)
+		op.GeoM.Translate(4, 4)
+		text.DrawString(img, txt, font, color.Black,
+			n.OuterWidth, n.OuterHeight, text.Start, text.Start, -1, *op)
 	}
 
 	for _, c := range n.children {
