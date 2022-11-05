@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/etherealmachine/bento/text"
@@ -51,9 +52,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 	}
 
 	switch n.tag {
-	case "button":
-		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
-	case "text":
+	case "button", "text":
 		text.DrawString(img, n.templateContent(), n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
 		txt := n.templateContent()
@@ -91,6 +90,8 @@ func (n *Box) Draw(img *ebiten.Image) {
 				n.drawScrollbar(img, op)
 			}
 		}
+	case "canvas":
+		reflect.ValueOf(n.component).MethodByName(n.attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.tag)

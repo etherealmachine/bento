@@ -53,7 +53,7 @@ func (n *Box) size() {
 		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
-	} else if n.tag != "row" && n.tag != "col" {
+	} else if n.tag != "canvas" && n.tag != "row" && n.tag != "col" {
 		log.Fatalf("can't size %s", n.tag)
 	}
 	for _, c := range n.children {

@@ -10,7 +10,6 @@ import (
 )
 
 var allowedTags = []string{
-	"grid",
 	"row",
 	"col",
 	"p",
@@ -19,6 +18,7 @@ var allowedTags = []string{
 	"img",
 	"input",
 	"textarea",
+	"canvas",
 }
 
 func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
@@ -45,10 +45,10 @@ func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		} else if err != nil {
 			return err
 		}
-		switch next.(type) {
+		switch next := next.(type) {
 		case xml.StartElement:
 			child := &Box{}
-			if err := child.UnmarshalXML(d, next.(xml.StartElement)); err != nil {
+			if err := child.UnmarshalXML(d, next); err != nil {
 				return err
 			}
 			n.children = append(n.children, child)
@@ -56,7 +56,7 @@ func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		case xml.EndElement:
 			return nil
 		case xml.CharData:
-			n.content = string(next.(xml.CharData))
+			n.content = string(next)
 		case xml.ProcInst:
 			return fmt.Errorf("unsupported xml processing instruction (<?target inst?>)")
 		case xml.Directive:

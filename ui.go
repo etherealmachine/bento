@@ -34,38 +34,11 @@ type Box struct {
 	parent      *Box
 	component   Component
 	context     interface{}
-	repeat      *Box
 	debug       bool
 	attrs       map[string]string
 	attrTmpls   map[string]*template.Template
 	content     string
 	contentTmpl *template.Template
-}
-
-func (n *Box) clone(parent *Box) *Box {
-	attrs := make(map[string]string)
-	for k, v := range n.attrs {
-		attrs[k] = v
-	}
-	if parent == nil {
-		parent = n.parent
-	}
-	clone := &Box{
-		tag:         n.tag,
-		parent:      parent,
-		attrs:       attrs,
-		style:       n.style,
-		component:   n.component,
-		context:     n.context,
-		attrTmpls:   n.attrTmpls,
-		content:     n.content,
-		contentTmpl: n.contentTmpl,
-	}
-	clone.children = make([]*Box, len(n.children))
-	for i, c := range n.children {
-		clone.children[i] = c.clone(clone)
-	}
-	return clone
 }
 
 type layout struct {
@@ -142,21 +115,6 @@ func Build(c Component) (*Box, error) {
 					log.Fatal(err)
 				}
 				n.attrTmpls[k] = tmpl
-			}
-		}
-		if repeat := n.attrs["repeat"]; repeat != "" {
-			n.repeat = n.children[0]
-			v := reflect.ValueOf(n.context).Elem().FieldByName(repeat)
-			n.children = make([]*Box, v.Len())
-			for i := 0; i < v.Len(); i++ {
-				val := v.Index(i)
-				clone := n.repeat.clone(nil)
-				ctx := make(map[string]interface{})
-				ctx["item"] = val.Interface()
-				ctx["index"] = i
-				ctx["parent"] = n.context
-				clone.context = ctx
-				n.children[i] = clone
 			}
 		}
 		if n.tag == "input" || n.tag == "textarea" {
@@ -246,13 +204,6 @@ func (n *Box) dump() {
 
 func max(a, b int) int {
 	if a > b {
-		return a
-	}
-	return b
-}
-
-func min(a, b int) int {
-	if a < b {
 		return a
 	}
 	return b
