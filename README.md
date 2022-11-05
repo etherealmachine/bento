@@ -1,7 +1,9 @@
 # Bento
 
+[Demo](https://etherealmachine.github.io/bento/)
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/etherealmachine/bento.svg)](https://pkg.go.dev/github.com/etherealmachine/ebiten/bento)
-[![Build Status](https://github.com/etherealmachine/bento/workflows/test/badge.svg)](https://github.com/etherealmachine/bento/actions?query=workflow%3Atest)
+[![Build Status](https://github.com/etherealmachine/bento/workflows/Go/badge.svg)](https://github.com/etherealmachine/bento/actions?query=workflow%3AGo)
 
 # An XML based UI builder for Ebiten
 
