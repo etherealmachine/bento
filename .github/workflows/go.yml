@@ -13,6 +13,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      DISPLAY: ':99'
     steps:
     - uses: actions/checkout@v3
 
@@ -21,7 +23,14 @@ jobs:
       with:
         go-version: 1.18
 
-    - uses: RpxdYTX/install-glfw-deps@v2
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install libasound2-dev libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev libxxf86vm-dev
+
+    - name: Xvfb
+      run: |
+        Xvfb $DISPLAY -screen 0 1024x768x24 > /dev/null 2>&1 &
 
     - name: Build
       run: env GOOS=js GOARCH=wasm go build -v -o ./docs/demo.wasm ./examples/...
