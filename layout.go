@@ -112,7 +112,7 @@ func (n *Box) grow() {
 				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
 				c.fillHeight(c.OuterHeight + valloc)
 			} else {
-				c.fillHeight(c.OuterHeight)
+				c.fillHeight(n.OuterHeight)
 			}
 		}
 	}
