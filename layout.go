@@ -34,11 +34,11 @@ func (n *Box) size() {
 		return
 	}
 	if n.tag == "button" || n.tag == "text" {
-		bounds := text.BoundString(n.style.Font, n.templateContent())
+		bounds := text.BoundString(n.style.Font, n.content)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.tag == "p" {
-		bounds := text.BoundParagraph(n.style.Font, n.templateContent(), n.style.MaxWidth)
+		bounds := text.BoundParagraph(n.style.Font, n.content, n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
 	} else if n.tag == "img" && n.style.Image != nil {

@@ -2,6 +2,7 @@ package bento
 
 import (
 	"image"
+	"log"
 	"reflect"
 	"time"
 
@@ -37,6 +38,9 @@ type state struct {
 }
 
 func (n *Box) updateState(keys []ebiten.Key) {
+	if !n.style.display() || n.style.hidden() {
+		return
+	}
 	if n.tag == "input" || n.tag == "textarea" {
 		n.updateInput()
 	} else {
@@ -45,21 +49,25 @@ func (n *Box) updateState(keys []ebiten.Key) {
 	if n.style.Scrollbar != nil {
 		n.updateScroll()
 	}
-	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && n.attrs["onClick"] != "" {
 		x, y := ebiten.CursorPosition()
 		attr := n.attrs["onClick"]
 		m := reflect.ValueOf(n.component).MethodByName(attr)
-		if m.IsValid() {
-			var args []reflect.Value
-			if m.Type().NumIn() == 1 {
-				args = []reflect.Value{reflect.ValueOf(&Event{
-					X:   x - n.X,
-					Y:   y - n.Y,
-					Box: n,
-				})}
-			}
-			m.Call(args)
+		if !m.IsValid() {
+			log.Fatalf("%s can't find onClick handler named %q", n.tag, attr)
 		}
+		var args []reflect.Value
+		if m.Type().NumIn() == 1 {
+			args = []reflect.Value{reflect.ValueOf(&Event{
+				X:   x - n.X,
+				Y:   y - n.Y,
+				Box: n,
+			})}
+		}
+		m.Call(args)
+	}
+	for _, c := range n.children {
+		c.updateState(keys)
 	}
 }
 
@@ -89,11 +97,8 @@ func (n *Box) updateInput() {
 				} else if n.cursor < len(v) && k == ebiten.KeyRight {
 					n.cursor++
 					n.cursorTime = time.Now().UnixMilli()
-				} else if k == ebiten.KeyUp {
-					// TODO
-				} else if k == ebiten.KeyDown {
-					// TODO
 				}
+				// TODO: ebiten.KeyUp, ebiten.KeyDown
 			}
 		}
 		n.attrs["value"] = v

@@ -3,7 +3,10 @@ State and drawing could ideally be moved to Draw and Update methods for the indi
 would be especially nice if they used a common callback and event API. Ideally there's no real
 difference between the built-in tags like input and textarea and a custom component.
 
-# Repeating elements and templating
+# Repeating and conditional elements
+
+# Improve demo
+Make the demo an interactive walkthrough showcasing the features and syntax
 
 # Shared styles
 CSS is the obviously solution, but a bit hard to fully implement in practice. Maybe just classes

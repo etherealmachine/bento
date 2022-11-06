@@ -139,11 +139,11 @@ func (s *Style) growth() (int, int) {
 }
 
 func (s *Style) display() bool {
-	return s.node.templateAttr("display", true)
+	return s.node.attrs["display"] != "false"
 }
 
 func (s *Style) hidden() bool {
-	return s.node.templateAttr("hidden", false)
+	return s.node.attrs["hidden"] == "true"
 }
 
 func (n *Box) styleSize() {
@@ -497,6 +497,9 @@ func loadImageFromSpec(spec string, frames int) (*ebiten.Image, *[3]int, *[3]int
 		for i := 0; i < 3; i++ {
 			var err error
 			widths[i], err = strconv.Atoi(a[i+1])
+			if err != nil {
+				return nil, nil, nil, err
+			}
 			heights[i], err = strconv.Atoi(a[i+4])
 			if err != nil {
 				return nil, nil, nil, err

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/etherealmachine/bento"
 )
 
@@ -18,22 +16,12 @@ func (d *Demo) Next() {
 	d.CurrentPage = 1
 }
 
-func (d *Demo) Page1() *bento.Box {
-	p := &Page1{}
-	b, err := bento.Build(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return b
+func (d *Demo) Page1() bento.Component {
+	return &Page1{}
 }
 
-func (d *Demo) Page2() *bento.Box {
-	p := &Page2{Title: "Loomings", Content: paragraphs[0], Paragraphs: paragraphs}
-	b, err := bento.Build(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return b
+func (d *Demo) Page2() bento.Component {
+	return &Page2{Title: "Loomings", Content: paragraphs[0], Paragraphs: paragraphs}
 }
 
 func (d *Demo) UI() string {
