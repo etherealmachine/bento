@@ -8,8 +8,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"image"
+	"log"
 	"reflect"
 	"text/template"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -54,18 +56,21 @@ func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
 }
 
 func Build(c Component) (*Box, error) {
+	start := time.Now()
 	root := &Box{
 		component: c,
 	}
 	if err := root.build(nil); err != nil {
 		return nil, err
 	}
+	log.Printf("initial build took %s", time.Since(start))
 	return root, nil
 }
 
 func (n *Box) build(prev *Box) error {
+	n.debug = true
 	if n.tag == "" || (prev != nil && n.component != prev.component) {
-		if prev != nil {
+		if prev != nil && n.isSubcomponent() && reflect.ValueOf(prev.component).Elem().Type().Name() == n.tag {
 			n.component = prev.component
 		}
 		tmpl, err := template.New("").Parse(n.component.UI())
@@ -107,7 +112,7 @@ func (n *Box) build(prev *Box) error {
 			child.component = n.component
 		}
 		var prevChild *Box
-		if prev != nil {
+		if prev != nil && i < len(prev.children) {
 			prevChild = prev.children[i]
 		}
 		if err := child.build(prevChild); err != nil {
@@ -157,11 +162,16 @@ func (n *Box) Update() error {
 	}
 	n.updateState(keys)
 	keys = keys[:0]
+	start := time.Now()
 	new := &Box{component: n.component}
 	if err := new.build(n); err != nil {
 		return err
 	}
 	*n = *new
+	elapsed := time.Since(start)
+	if elapsed >= 10*time.Millisecond {
+		log.Println(elapsed)
+	}
 	n.size()
 	n.grow()
 	n.justify()
