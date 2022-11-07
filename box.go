@@ -64,7 +64,7 @@ func Build(c Component) (*Box, error) {
 }
 
 func (n *Box) build(prev *Box) error {
-	if n.tag == "" {
+	if n.tag == "" || (prev != nil && n.component != prev.component) {
 		if prev != nil {
 			n.component = prev.component
 		}
@@ -107,7 +107,9 @@ func (n *Box) build(prev *Box) error {
 		if prev != nil {
 			prevChild = prev.children[i]
 		}
-		child.build(prevChild)
+		if err := child.build(prevChild); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -118,9 +120,6 @@ func (n *Box) isSubcomponent() bool {
 }
 
 func (n *Box) buildSubcomponent(prev *Box) error {
-	if prev != nil {
-		n.component = prev.component
-	}
 	m := reflect.ValueOf(n.component).MethodByName(n.tag)
 	if !m.IsValid() {
 		return fmt.Errorf("%s: failed to find method for tag %s", reflect.TypeOf(n.component), n.tag)
@@ -159,6 +158,7 @@ func (n *Box) Update() error {
 	if err := new.build(n); err != nil {
 		return err
 	}
+	*n = *new
 	n.size()
 	n.grow()
 	n.justify()
@@ -202,7 +202,13 @@ func (n *Box) String() string {
 		}
 		buf.WriteString(n.tag)
 		buf.WriteByte(' ')
-		buf.WriteString(reflect.TypeOf(n.component).String())
+		fmt.Fprintf(buf, "%q", n.content)
+		buf.WriteByte(' ')
+		if n.component == nil {
+			buf.WriteString("<nil>")
+		} else {
+			buf.WriteString(reflect.TypeOf(n.component).String())
+		}
 		buf.WriteByte('\n')
 		return nil
 	})
