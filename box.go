@@ -85,6 +85,9 @@ func (n *Box) build(prev *Box) error {
 			return err
 		}
 	}
+	if prev != nil {
+		n.state = prev.state
+	}
 	if n.style == nil {
 		n.style = new(Style)
 	}
