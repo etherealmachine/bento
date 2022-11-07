@@ -5,6 +5,7 @@ package bento
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"image"
 	"reflect"
@@ -14,8 +15,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	"encoding/xml"
 )
 
 type Component interface {
@@ -42,12 +41,12 @@ type layout struct {
 	OuterWidth, OuterHeight     int `xml:",attr"`
 }
 
-func (n *Box) visit(f func(n *Box) error) error {
-	if err := f(n); err != nil {
+func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
+	if err := f(depth, n); err != nil {
 		return err
 	}
 	for _, c := range n.children {
-		if err := c.visit(f); err != nil {
+		if err := c.visit(depth+1, f); err != nil {
 			return err
 		}
 	}
@@ -58,49 +57,31 @@ func Build(c Component) (*Box, error) {
 	root := &Box{
 		component: c,
 	}
-	if err := root.rebuild(); err != nil {
+	if err := root.build(nil); err != nil {
 		return nil, err
 	}
 	return root, nil
 }
 
-func (old *Box) rebuild() error {
-	n, err := inflateTemplate(old.component)
-	if err != nil {
-		return err
+func (n *Box) build(prev *Box) error {
+	if n.tag == "" {
+		if prev != nil {
+			n.component = prev.component
+		}
+		tmpl, err := template.New("").Parse(n.component.UI())
+		if err != nil {
+			return err
+		}
+		buf := new(bytes.Buffer)
+		if err := tmpl.Execute(buf, n.component); err != nil {
+			return err
+		}
+		if err := xml.Unmarshal(buf.Bytes(), n); err != nil {
+			return err
+		}
 	}
-	if n.tag != old.tag {
-		*old = *n
-	}
-	return nil
-}
-
-func (n *Box) isSubcomponent() bool {
-	r, _ := utf8.DecodeRuneInString(n.tag)
-	return unicode.IsUpper(r)
-}
-
-func inflateTemplate(c Component) (*Box, error) {
-	tmpl, err := template.New("").Parse(c.UI())
-	if err != nil {
-		return nil, err
-	}
-	buf := new(bytes.Buffer)
-	if err := tmpl.Execute(buf, c); err != nil {
-		return nil, err
-	}
-	n := &Box{}
-	if err := xml.Unmarshal(buf.Bytes(), n); err != nil {
-		return nil, err
-	}
-	n.inflate(c)
-	return n, nil
-}
-
-func (n *Box) inflate(c Component) error {
-	n.component = c
 	if n.isSubcomponent() {
-		if err := n.buildSubcomponent(); err != nil {
+		if err := n.buildSubcomponent(prev); err != nil {
 			return err
 		}
 	}
@@ -117,13 +98,29 @@ func (n *Box) inflate(c Component) error {
 	if !n.style.display() || n.style.hidden() {
 		return nil
 	}
-	for _, child := range n.children {
-		child.inflate(c)
+	for i, child := range n.children {
+		child.parent = n
+		if child.component == nil {
+			child.component = n.component
+		}
+		var prevChild *Box
+		if prev != nil {
+			prevChild = prev.children[i]
+		}
+		child.build(prevChild)
 	}
 	return nil
 }
 
-func (n *Box) buildSubcomponent() error {
+func (n *Box) isSubcomponent() bool {
+	r, _ := utf8.DecodeRuneInString(n.tag)
+	return unicode.IsUpper(r)
+}
+
+func (n *Box) buildSubcomponent(prev *Box) error {
+	if prev != nil {
+		n.component = prev.component
+	}
 	m := reflect.ValueOf(n.component).MethodByName(n.tag)
 	if !m.IsValid() {
 		return fmt.Errorf("%s: failed to find method for tag %s", reflect.TypeOf(n.component), n.tag)
@@ -133,8 +130,10 @@ func (n *Box) buildSubcomponent() error {
 		n.style = style
 		n.tag = style.Extends
 	} else if child, ok := res[0].Interface().(Component); ok {
-		b := &Box{component: child}
-		if err := b.rebuild(); err != nil {
+		b := &Box{
+			component: child,
+		}
+		if err := b.build(prev); err != nil {
 			return err
 		}
 		for name, value := range n.attrs {
@@ -156,7 +155,8 @@ func (n *Box) Update() error {
 	}
 	n.updateState(keys)
 	keys = keys[:0]
-	if err := n.rebuild(); err != nil {
+	new := &Box{component: n.component}
+	if err := new.build(n); err != nil {
 		return err
 	}
 	n.size()
@@ -166,7 +166,7 @@ func (n *Box) Update() error {
 }
 
 func (n *Box) toggleDebug() {
-	n.visit(func(n *Box) error {
+	n.visit(0, func(_ int, n *Box) error {
 		n.debug = !n.debug
 		return nil
 	})
@@ -192,4 +192,19 @@ func getState(rect image.Rectangle) State {
 		return Hover
 	}
 	return Idle
+}
+
+func (n *Box) String() string {
+	buf := new(bytes.Buffer)
+	n.visit(0, func(depth int, n *Box) error {
+		for i := 0; i < depth; i++ {
+			buf.WriteByte(' ')
+		}
+		buf.WriteString(n.tag)
+		buf.WriteByte(' ')
+		buf.WriteString(reflect.TypeOf(n.component).String())
+		buf.WriteByte('\n')
+		return nil
+	})
+	return buf.String()
 }

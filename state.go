@@ -54,7 +54,7 @@ func (n *Box) updateState(keys []ebiten.Key) {
 		attr := n.attrs["onClick"]
 		m := reflect.ValueOf(n.component).MethodByName(attr)
 		if !m.IsValid() {
-			log.Fatalf("%s can't find onClick handler named %q", n.tag, attr)
+			log.Fatalf("%s can't find onClick handler named %q in component %s", n.tag, attr, reflect.TypeOf(n.component))
 		}
 		var args []reflect.Value
 		if m.Type().NumIn() == 1 {
