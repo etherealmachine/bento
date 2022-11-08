@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -22,21 +23,21 @@ var allowedTags = []string{
 }
 
 func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	n.tag = start.Name.Local
+	n.Tag = start.Name.Local
 	allowed := false
 	for _, tag := range allowedTags {
-		if n.tag == tag {
+		if n.Tag == tag {
 			allowed = true
 		}
 	}
 	if !allowed {
-		if r, _ := utf8.DecodeRuneInString(n.tag); !unicode.IsUpper(r) {
-			return fmt.Errorf("unsupported tag %s, allowed tags: %v", n.tag, allowedTags)
+		if r, _ := utf8.DecodeRuneInString(n.Tag); !unicode.IsUpper(r) {
+			return fmt.Errorf("unsupported tag %s, allowed tags: %v", n.Tag, allowedTags)
 		}
 	}
-	n.attrs = make(map[string]string)
+	n.Attrs = make(map[string]string)
 	for _, attr := range start.Attr {
-		n.attrs[attr.Name.Local] = attr.Value
+		n.Attrs[attr.Name.Local] = attr.Value
 	}
 	for {
 		next, err := d.Token()
@@ -51,12 +52,12 @@ func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			if err := child.UnmarshalXML(d, next); err != nil {
 				return err
 			}
-			n.children = append(n.children, child)
-			child.parent = n
+			n.Children = append(n.Children, child)
+			child.Parent = n
 		case xml.EndElement:
 			return nil
 		case xml.CharData:
-			n.content = string(next)
+			n.Content = strings.TrimSpace(string(next))
 		case xml.ProcInst:
 			return fmt.Errorf("unsupported xml processing instruction (<?target inst?>)")
 		case xml.Directive:

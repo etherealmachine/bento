@@ -10,6 +10,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+type Layout struct {
+	X, Y                        int `xml:",attr"`
+	ContentWidth, ContentHeight int `xml:",attr"`
+	InnerWidth, InnerHeight     int `xml:",attr"`
+	OuterWidth, OuterHeight     int `xml:",attr"`
+}
+
 func (n *Box) Bounds() image.Rectangle {
 	return n.outerRect()
 }
@@ -19,46 +26,46 @@ func (n *Box) outerRect() image.Rectangle {
 }
 
 func (n *Box) innerRect() image.Rectangle {
-	mt, _, _, ml := n.style.margin()
+	mt, _, _, ml := n.Style.margin()
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.style.display() {
+	if !n.Style.display() {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
 		n.OuterHeight = 0
 		return
 	}
-	if n.tag == "button" || n.tag == "text" {
-		bounds := text.BoundString(n.style.Font, n.content)
+	if n.Tag == "button" || n.Tag == "text" {
+		bounds := text.BoundString(n.Style.Font, n.Content)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
-	} else if n.tag == "p" {
-		bounds := text.BoundParagraph(n.style.Font, n.content, n.style.MaxWidth)
+		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
+	} else if n.Tag == "p" {
+		bounds := text.BoundParagraph(n.Style.Font, n.Content, n.Style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
-	} else if n.tag == "img" && n.style.Image != nil {
-		bounds := n.style.Image.Bounds()
+		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
+	} else if n.Tag == "img" && n.Style.Image != nil {
+		bounds := n.Style.Image.Bounds()
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
-	} else if n.tag == "input" {
-		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
+	} else if n.Tag == "input" {
+		bounds := text.BoundString(n.Style.Font, n.Attrs["placeholder"])
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
-	} else if n.tag == "textarea" {
-		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
+		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
+	} else if n.Tag == "textarea" {
+		bounds := text.BoundParagraph(n.Style.Font, n.Attrs["value"], n.Style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
-	} else if n.tag != "canvas" && n.tag != "row" && n.tag != "col" {
-		log.Fatalf("can't size %s", n.tag)
+		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
+	} else if n.Tag != "canvas" && n.Tag != "row" && n.Tag != "col" {
+		log.Fatalf("can't size %s", n.Tag)
 	}
-	for _, c := range n.children {
+	for _, c := range n.Children {
 		c.size()
-		switch n.tag {
+		switch n.Tag {
 		case "row":
 			n.ContentWidth += c.OuterWidth
 			n.ContentHeight = max(n.ContentHeight, c.OuterHeight)
@@ -68,8 +75,8 @@ func (n *Box) size() {
 		}
 	}
 	n.styleSize()
-	mt, mr, mb, ml := n.style.margin()
-	pt, pr, pb, pl := n.style.padding()
+	mt, mr, mb, ml := n.Style.margin()
+	pt, pr, pb, pl := n.Style.padding()
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
@@ -78,29 +85,29 @@ func (n *Box) size() {
 
 func (n *Box) grow() {
 	w, h := ebiten.WindowSize()
-	if n.style != nil && n.style.HGrow > 0 && n.parent == nil {
+	if n.Style != nil && n.Style.HGrow > 0 && n.Parent == nil {
 		n.fillWidth(w)
 	}
-	if n.style != nil && n.style.VGrow > 0 && n.parent == nil {
+	if n.Style != nil && n.Style.VGrow > 0 && n.Parent == nil {
 		n.fillHeight(h)
 	}
 	hgrow, vgrow := 0, 0
-	for _, c := range n.children {
-		if !c.style.display() {
+	for _, c := range n.Children {
+		if !c.Style.display() {
 			continue
 		}
-		hg, vg := c.style.growth()
+		hg, vg := c.Style.growth()
 		hgrow += hg
 		vgrow += vg
 	}
 	hspace, vspace := n.space()
-	for _, c := range n.children {
-		if !c.style.display() {
+	for _, c := range n.Children {
+		if !c.Style.display() {
 			continue
 		}
-		hg, vg := c.style.growth()
+		hg, vg := c.Style.growth()
 		if hg > 0 {
-			if n.tag == "row" {
+			if n.Tag == "row" {
 				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
 				c.fillWidth(c.OuterWidth + halloc)
 			} else {
@@ -108,7 +115,7 @@ func (n *Box) grow() {
 			}
 		}
 		if vg > 0 && vgrow > 0 {
-			if n.tag == "col" {
+			if n.Tag == "col" {
 				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
 				c.fillHeight(c.OuterHeight + valloc)
 			} else {
@@ -116,8 +123,8 @@ func (n *Box) grow() {
 			}
 		}
 	}
-	for _, c := range n.children {
-		if !c.style.display() {
+	for _, c := range n.Children {
+		if !c.Style.display() {
 			continue
 		}
 		c.grow()
@@ -128,8 +135,8 @@ func (n *Box) fillWidth(w int) {
 	if w < n.OuterWidth {
 		return
 	}
-	_, mr, _, ml := n.style.margin()
-	_, pr, _, pl := n.style.padding()
+	_, mr, _, ml := n.Style.margin()
+	_, pr, _, pl := n.Style.padding()
 	n.OuterWidth = w
 	n.InnerWidth = n.OuterWidth - ml - mr
 	n.ContentWidth = n.InnerWidth - pr - pl
@@ -139,8 +146,8 @@ func (n *Box) fillHeight(h int) {
 	if h < n.OuterHeight {
 		return
 	}
-	mt, _, mb, _ := n.style.margin()
-	pt, _, pb, _ := n.style.padding()
+	mt, _, mb, _ := n.Style.margin()
+	pt, _, pb, _ := n.Style.padding()
 	n.OuterHeight = h
 	n.InnerHeight = n.OuterHeight - mt - mb
 	n.ContentHeight = n.InnerHeight - pt - pb
@@ -151,7 +158,7 @@ func (n *Box) space() (int, int) {
 	maxChildHeight := 0
 	totalChildWidths := 0
 	totalChildHeights := 0
-	for _, c := range n.children {
+	for _, c := range n.Children {
 		maxChildWidth = max(maxChildWidth, c.OuterWidth)
 		maxChildHeight = max(maxChildHeight, c.OuterHeight)
 		totalChildWidths += c.OuterWidth
@@ -159,7 +166,7 @@ func (n *Box) space() (int, int) {
 	}
 
 	var hspace, vspace int
-	if n.tag == "row" {
+	if n.Tag == "row" {
 		hspace = n.InnerWidth - totalChildWidths
 		vspace = n.InnerHeight - maxChildHeight
 	} else {
@@ -172,13 +179,13 @@ func (n *Box) space() (int, int) {
 func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
-	hj, vj := n.style.justification()
-	for _, c := range n.children {
+	hj, vj := n.Style.justification()
+	for _, c := range n.Children {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 		var ox, oy int
-		if c.style != nil {
-			ox, oy = c.style.OffsetX, c.style.OffsetY
+		if c.Style != nil {
+			ox, oy = c.Style.OffsetX, c.Style.OffsetY
 		}
 		if ox < 0 {
 			ox = n.InnerWidth - c.OuterWidth + ox + 1
@@ -189,9 +196,9 @@ func (n *Box) justify() {
 		c.X += ox
 		c.Y += oy
 	}
-	extents := make([][2]int, len(n.children))
-	for i, c := range n.children {
-		if n.tag == "row" {
+	extents := make([][2]int, len(n.Children))
+	for i, c := range n.Children {
+		if n.Tag == "row" {
 			extents[i][0] = c.OuterWidth
 			extents[i][1] = c.OuterHeight
 		} else {
@@ -200,13 +207,13 @@ func (n *Box) justify() {
 		}
 	}
 	var offsets [][2]int
-	if n.tag == "row" {
+	if n.Tag == "row" {
 		offsets = distribute(hspace, n.InnerHeight, hj, vj, extents)
 	} else {
 		offsets = distribute(vspace, n.InnerWidth, vj, hj, extents)
 	}
-	for i, c := range n.children {
-		if n.tag == "row" {
+	for i, c := range n.Children {
+		if n.Tag == "row" {
 			c.X += offsets[i][0]
 			c.Y += offsets[i][1]
 		} else {
@@ -214,7 +221,7 @@ func (n *Box) justify() {
 			c.X += offsets[i][1]
 		}
 	}
-	for _, c := range n.children {
+	for _, c := range n.Children {
 		c.justify()
 	}
 }

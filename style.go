@@ -81,7 +81,7 @@ func (s *Style) adopt(node *Box) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
-	for k, v := range node.attrs {
+	for k, v := range node.Attrs {
 		if _, exists := s.Attrs[k]; !exists {
 			s.Attrs[k] = v
 		}
@@ -139,31 +139,31 @@ func (s *Style) growth() (int, int) {
 }
 
 func (s *Style) display() bool {
-	return s.node.attrs["display"] != "false"
+	return s.node.Attrs["display"] != "false"
 }
 
 func (s *Style) hidden() bool {
-	return s.node.attrs["hidden"] == "true"
+	return s.node.Attrs["hidden"] == "true"
 }
 
 func (n *Box) styleSize() {
-	if n.style == nil {
+	if n.Style == nil {
 		return
 	}
-	n.ContentWidth += n.style.scrollBarWidth()
-	if n.style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
+	n.ContentWidth += n.Style.scrollBarWidth()
+	if n.Style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.Style.MinWidth)
 	}
-	if n.style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
+	if n.Style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.Style.MinHeight)
 	}
-	if n.tag == "p" {
-		metrics := n.style.Font.Metrics()
+	if n.Tag == "p" {
+		metrics := n.Style.Font.Metrics()
 		minHeight := metrics.Height.Round()
 		n.ContentHeight = max(n.ContentHeight, minHeight)
 	}
-	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
-		n.ContentHeight = n.style.MaxHeight
+	if n.Style.MaxHeight > 0 && n.ContentHeight > n.Style.MaxHeight {
+		n.ContentHeight = n.Style.MaxHeight
 	}
 }
 
@@ -218,16 +218,16 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing maxWidth: %s", err)
 		}
 	}
-	if s.MaxWidth != 0 && s.node.tag != "p" && s.node.tag != "textarea" {
-		return fmt.Errorf("invalid tag %s: max width can only apply to paragraph (p) or textarea", s.node.tag)
+	if s.MaxWidth != 0 && s.node.Tag != "p" && s.node.Tag != "textarea" {
+		return fmt.Errorf("invalid tag %s: max width can only apply to paragraph (p) or textarea", s.node.Tag)
 	}
 	if s.MaxHeight == 0 {
 		if s.MaxHeight, err = parseSize(s.Attrs["maxHeight"], s.Font); err != nil {
 			return fmt.Errorf("error parsing maxHeight: %s", err)
 		}
 	}
-	if s.MaxHeight != 0 && s.node.tag != "p" && s.node.tag != "textarea" {
-		return fmt.Errorf("invalid tag %s: max height can only apply to paragraph (p) or textarea", s.node.tag)
+	if s.MaxHeight != 0 && s.node.Tag != "p" && s.node.Tag != "textarea" {
+		return fmt.Errorf("invalid tag %s: max height can only apply to paragraph (p) or textarea", s.node.Tag)
 	}
 	if spec := s.Attrs["justify"]; spec != "" {
 		if s.HJust, s.VJust, err = parseJustification(spec); err != nil {

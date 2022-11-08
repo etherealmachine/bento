@@ -38,23 +38,23 @@ type state struct {
 }
 
 func (n *Box) updateState(keys []ebiten.Key) {
-	if !n.style.display() || n.style.hidden() {
+	if !n.Style.display() || n.Style.hidden() {
 		return
 	}
-	if n.tag == "input" || n.tag == "textarea" {
+	if n.Tag == "input" || n.Tag == "textarea" {
 		n.updateInput()
 	} else {
 		n.state.state = getState(n.innerRect())
 	}
-	if n.style.Scrollbar != nil {
+	if n.Style.Scrollbar != nil {
 		n.updateScroll()
 	}
-	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && n.attrs["onClick"] != "" {
+	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && n.Attrs["onClick"] != "" {
 		x, y := ebiten.CursorPosition()
-		attr := n.attrs["onClick"]
-		m := reflect.ValueOf(n.component).MethodByName(attr)
+		attr := n.Attrs["onClick"]
+		m := reflect.ValueOf(n.Component).MethodByName(attr)
 		if !m.IsValid() {
-			log.Fatalf("%s can't find onClick handler named %q in component %s", n.tag, attr, reflect.TypeOf(n.component))
+			log.Fatalf("%s can't find onClick handler named %q in component %s", n.Tag, attr, reflect.TypeOf(n.Component))
 		}
 		var args []reflect.Value
 		if m.Type().NumIn() == 1 {
@@ -66,7 +66,7 @@ func (n *Box) updateState(keys []ebiten.Key) {
 		}
 		m.Call(args)
 	}
-	for _, c := range n.children {
+	for _, c := range n.Children {
 		c.updateState(keys)
 	}
 }
@@ -79,7 +79,7 @@ func (n *Box) updateInput() {
 		n.state.state = state
 	}
 	if n.state.state == Active {
-		v := n.attrs["value"]
+		v := n.Attrs["value"]
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
@@ -101,13 +101,13 @@ func (n *Box) updateInput() {
 				// TODO: ebiten.KeyUp, ebiten.KeyDown
 			}
 		}
-		n.attrs["value"] = v
+		n.Attrs["value"] = v
 	}
 }
 
 func (n *Box) updateScroll() {
-	mt, _, _, ml := n.style.margin()
-	pt, _, _, pl := n.style.padding()
+	mt, _, _, ml := n.Style.margin()
+	pt, _, _, pl := n.Style.padding()
 	rects := n.scrollRects(n.scrollPosition)
 	for i := 0; i < 4; i++ {
 		if i == 2 {

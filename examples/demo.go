@@ -20,7 +20,7 @@ func (d *Demo) Next() {
 
 func (d *Demo) Page1() bento.Component {
 	if d.page1 == nil {
-		d.page1 = &Page1{}
+		d.page1 = &Page1{Paragraphs: paragraphs}
 	}
 	return d.page1
 }

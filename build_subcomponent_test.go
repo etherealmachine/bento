@@ -70,7 +70,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 	}
 
 	c.Count = 0
-	new := &Box{component: c}
+	new := &Box{Component: c}
 	if err := new.build(box); err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 
 	c.Count = 1
 	c.sub.Count = 3
-	new = &Box{component: c}
+	new = &Box{Component: c}
 	if err := new.build(box); err != nil {
 		t.Fatal(err)
 	}

@@ -14,62 +14,62 @@ import (
 )
 
 func (n *Box) Draw(img *ebiten.Image) {
-	if n.style.hidden() || !n.style.display() {
+	if n.Style.hidden() || !n.Style.display() {
 		return
 	}
-	mt, _, _, ml := n.style.margin()
-	pt, _, _, pl := n.style.padding()
+	mt, _, _, ml := n.Style.margin()
+	pt, _, _, pl := n.Style.padding()
 
 	op := new(ebiten.DrawImageOptions)
 	op.GeoM.Translate(float64(n.X), float64(n.Y))
 
-	if n.debug {
+	if n.Debug {
 		// Outer
 		drawBox(img, n.OuterWidth, n.OuterHeight, color.White, true, op)
 	}
 
 	op.GeoM.Translate(float64(ml), float64(mt))
-	if n.debug {
+	if n.Debug {
 		// Inner
 		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
 
-	if n.style != nil && n.style.Border != nil {
-		n.style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	if n.Style != nil && n.Style.Border != nil {
+		n.Style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
-	switch n.tag {
+	switch n.Tag {
 	case "button":
-		n.style.Button[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.Style.Button[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
-		n.style.Input[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.Style.Input[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
-	if n.debug {
+	if n.Debug {
 		// Content
 		drawBox(img, n.ContentWidth, n.ContentHeight, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true, op)
 	}
 
-	switch n.tag {
+	switch n.Tag {
 	case "button", "text":
-		text.DrawString(img, n.content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
+		text.DrawString(img, n.Content, n.Style.Font, n.Style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
-		maxHeight := n.style.MaxHeight
-		if n.style.MaxHeight != 0 {
+		maxHeight := n.Style.MaxHeight
+		if n.Style.MaxHeight != 0 {
 			maxHeight = max(maxHeight, n.ContentHeight)
 		}
-		n.scrollPosition = text.DrawParagraph(img, n.content, n.style.Font, n.style.Color, n.style.MaxWidth, maxHeight, -1, n.scrollLine, *op)
+		n.scrollPosition = text.DrawParagraph(img, n.Content, n.Style.Font, n.Style.Color, n.Style.MaxWidth, maxHeight, -1, n.scrollLine, *op)
 		if n.scrollPosition >= 0 {
 			op.GeoM.Translate(float64(pl), -float64(pt))
 			n.drawScrollbar(img, op)
 		}
 	case "img":
-		img.DrawImage(n.style.Image, op)
+		img.DrawImage(n.Style.Image, op)
 	case "input", "textarea":
-		txt := n.attrs["value"]
+		txt := n.Attrs["value"]
 		if txt == "" && n.state.state != Active {
-			txt = n.attrs["placeholder"]
+			txt = n.Attrs["placeholder"]
 		}
 		cursor := -1
 		if n.state.state == Active {
@@ -80,28 +80,28 @@ func (n *Box) Draw(img *ebiten.Image) {
 				n.cursorTime = t
 			}
 		}
-		if n.tag == "input" {
-			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
+		if n.Tag == "input" {
+			text.DrawString(img, txt, n.Style.Font, n.Style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
 		} else {
-			n.scrollPosition = text.DrawParagraph(img, txt, n.style.Font, n.style.Color, n.style.MaxWidth, n.style.MaxHeight, cursor, n.scrollLine, *op)
+			n.scrollPosition = text.DrawParagraph(img, txt, n.Style.Font, n.Style.Color, n.Style.MaxWidth, n.Style.MaxHeight, cursor, n.scrollLine, *op)
 			if n.scrollPosition >= 0 {
 				op.GeoM.Translate(float64(pl), -float64(pt))
 				n.drawScrollbar(img, op)
 			}
 		}
 	case "canvas":
-		reflect.ValueOf(n.component).MethodByName(n.attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
+		reflect.ValueOf(n.Component).MethodByName(n.Attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
 	case "row", "col":
 	default:
-		log.Fatalf("can't draw %s", n.tag)
+		log.Fatalf("can't draw %s", n.Tag)
 	}
 
-	if n.debug {
+	if n.Debug {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(n.X), float64(n.Y))
 		// Annotate
 		font := text.Font("mono", 18)
-		txt := fmt.Sprintf("%s %dx%d", n.tag, n.OuterWidth, n.OuterHeight)
+		txt := fmt.Sprintf("%s %dx%d", n.Tag, n.OuterWidth, n.OuterHeight)
 		bounds := text.BoundString(font, txt)
 		drawBox(img, bounds.Dx()+8, bounds.Dy()+4, color.White, false, op)
 		op.GeoM.Translate(4, 4)
@@ -109,11 +109,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 			n.OuterWidth, n.OuterHeight, text.Start, text.Start, -1, *op)
 	}
 
-	for _, c := range n.children {
+	for _, c := range n.Children {
 		c.Draw(img)
 	}
 
-	if n.debug && n.parent == nil {
+	if n.Debug && n.Parent == nil {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(img.Bounds().Dx()-48), 24)
 		text.DrawString(
@@ -137,14 +137,14 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
 	for i, r := range n.scrollRects(n.scrollPosition) {
-		btn := n.style.Scrollbar[int(n.scrollState[i])][i]
+		btn := n.Style.Scrollbar[int(n.scrollState[i])][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
 }
 
 func (n *Box) scrollRects(scrollPos float64) [4]image.Rectangle {
 	var rects [4]image.Rectangle
-	s := n.style.Scrollbar[0][0].Width()
+	s := n.Style.Scrollbar[0][0].Width()
 	sf := float64(s)
 	trackHeight := float64(n.InnerHeight) - 2.5*sf
 	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)               // top button

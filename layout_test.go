@@ -6,8 +6,8 @@ import (
 
 func TestJustificationExtraSpace(t *testing.T) {
 	n := &Box{}
-	n.layout.InnerWidth = 20
-	n.layout.InnerHeight = 20
+	n.Layout.InnerWidth = 20
+	n.Layout.InnerHeight = 20
 	bounds := [][2]int{
 		{2, 1},
 		{3, 2},
@@ -88,22 +88,22 @@ func TestJustificationExtraSpace(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		n.children = nil
+		n.Children = nil
 		for _, b := range bounds {
-			n.children = append(n.children, &Box{
-				layout: layout{
+			n.Children = append(n.Children, &Box{
+				Layout: Layout{
 					OuterWidth:  b[0],
 					OuterHeight: b[1],
 				},
 			})
 		}
-		n.tag = test.tag
-		n.style = &Style{
+		n.Tag = test.tag
+		n.Style = &Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}
 		n.justify()
-		for i, c := range n.children {
+		for i, c := range n.Children {
 			if c.X != test.want[i][0] || c.Y != test.want[i][1] {
 				t.Fatalf("justification %s, %s, child %d got (%d,%d), want (%d,%d)", test.hjust, test.vjust, i, c.X, c.Y, test.want[i][0], test.want[i][1])
 			}
@@ -113,8 +113,8 @@ func TestJustificationExtraSpace(t *testing.T) {
 
 func TestJustificationNoExtraSpace(t *testing.T) {
 	n := &Box{}
-	n.layout.InnerWidth = 14
-	n.layout.InnerHeight = 4
+	n.Layout.InnerWidth = 14
+	n.Layout.InnerHeight = 4
 	bounds := [][2]int{
 		{2, 1},
 		{3, 2},
@@ -162,22 +162,22 @@ func TestJustificationNoExtraSpace(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		n.children = nil
+		n.Children = nil
 		for _, b := range bounds {
-			n.children = append(n.children, &Box{
-				layout: layout{
+			n.Children = append(n.Children, &Box{
+				Layout: Layout{
 					OuterWidth:  b[0],
 					OuterHeight: b[1],
 				},
 			})
 		}
-		n.tag = test.tag
-		n.style = &Style{
+		n.Tag = test.tag
+		n.Style = &Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}
 		n.justify()
-		for i, c := range n.children {
+		for i, c := range n.Children {
 			if c.X != test.want[i][0] || c.Y != test.want[i][1] {
 				t.Fatalf("justification %s, %s, child %d got (%d,%d), want (%d,%d)", test.hjust, test.vjust, i, c.X, c.Y, test.want[i][0], test.want[i][1])
 			}
