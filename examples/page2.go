@@ -81,7 +81,7 @@ func (p *Page2) UI() string {
 	return `<col grow="1" justify="center" border="frame.png 10">
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
 		<col grow="1">
-			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{.Title}}</text>
+			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{ .Title }}</text>
 			<row>
 				<img src="profile.png"/>
 				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="80em">{{.Content}}</p>
@@ -89,10 +89,10 @@ func (p *Page2) UI() string {
 			<Input onChange="Change" grow="1 0" placeholder="Title" color="#ffffff" />
 			<textarea grow="1" value="Content" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6lh" scrollbar="scrollbar.png 6" />
 		</col>
-		<Text grow="0 1" border="frame.png 10">{{index .Paragraphs 1}}
-{{index .Paragraphs 2}}</Text>
+		<Text grow="0 1" border="frame.png 10">{{ index .Paragraphs 1 }}
+{{ index .Paragraphs 2 }}</Text>
 		<row grow="1 0">
-			<Button onClick="Click">Clicks: {{.Clicks}}</Button>
+			<Button onClick="Click">Clicks: {{ .Clicks }}</Button>
 			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>
 		</row>
 	</col>`

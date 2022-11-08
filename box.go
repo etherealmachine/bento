@@ -57,21 +57,26 @@ func (n *Box) isSubcomponent() bool {
 	return unicode.IsUpper(r)
 }
 
-func buildSubcomponent(name string, component interface{}) (*Box, error) {
-	m := reflect.ValueOf(component).MethodByName(name)
+func (n *Box) buildSubcomponent() error {
+	m := reflect.ValueOf(n.component).MethodByName(n.tag)
 	if !m.IsValid() {
-		return nil, fmt.Errorf("%s has no method named %s", reflect.TypeOf(component), name)
+		return fmt.Errorf("%s has no method named %s", reflect.TypeOf(n.component), n.tag)
 	}
 	res := m.Call(nil)
 	if style, ok := res[0].Interface().(*Style); ok {
-		return &Box{
-			tag:   style.Extends,
-			style: style,
-		}, nil
+		n.style = style
+		n.tag = style.Extends
+		return nil
 	} else if sub, ok := res[0].Interface().(Component); ok {
-		return Build(sub)
+		subNode, err := Build(sub)
+		if err != nil {
+			return err
+		}
+		subNode.parent = n.parent
+		*n = *subNode
+		return nil
 	}
-	return nil, fmt.Errorf("%s.%s must return either Style or Component", reflect.TypeOf(component), name)
+	return fmt.Errorf("%s.%s must return either Style or Component", reflect.TypeOf(n.component), n.tag)
 }
 
 func (n *Box) build(prev *Box) error {
@@ -89,14 +94,17 @@ func (n *Box) build(prev *Box) error {
 		}
 	}
 	if n.isSubcomponent() {
-		subNode, err := buildSubcomponent(n.tag, n.component)
-		if err != nil {
+		if err := n.buildSubcomponent(); err != nil {
 			return err
 		}
-		*n = *subNode
 	}
-	if prev != nil {
+	if prev != nil && n.tag == prev.tag {
+		n.debug = prev.debug
 		n.state = prev.state
+		if n.tag == "input" || n.tag == "textarea" {
+			n.attrs["value"] = prev.attrs["value"]
+			n.attrs["placeholder"] = prev.attrs["placeholder"]
+		}
 	}
 	if n.style == nil {
 		n.style = new(Style)

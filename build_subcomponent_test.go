@@ -22,6 +22,7 @@ func (c *ComponentWithSub) UI() string {
 		{{ if eq .Count 1 }}
 			<SubComponent />
 		{{ end }}
+		<text>Hello World</text>
 	</col>`
 }
 
@@ -44,6 +45,7 @@ func TestBuildSubcomponent(t *testing.T) {
 	want := `col ComponentWithSub
 	col SubComponent
 		text 2
+	text Hello World
 `
 	got := box.String()
 	if got != want {
@@ -60,6 +62,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 	want := `col ComponentWithSub
 	col SubComponent
 		text 2
+	text Hello World
 `
 	got := box.String()
 	if got != want {
@@ -73,6 +76,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 	}
 	*box = *new
 	want = `col ComponentWithSub
+	text Hello World
 `
 	got = box.String()
 	if got != want {
@@ -89,6 +93,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 	want = `col ComponentWithSub
 	col SubComponent
 		text 3
+	text Hello World
 `
 	got = box.String()
 	if got != want {
