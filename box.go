@@ -8,10 +8,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"image"
-	"log"
 	"reflect"
+	"strings"
 	"text/template"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -44,6 +43,9 @@ type layout struct {
 }
 
 func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
+	if n == nil {
+		return nil
+	}
 	if err := f(depth, n); err != nil {
 		return err
 	}
@@ -56,21 +58,18 @@ func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
 }
 
 func Build(c Component) (*Box, error) {
-	start := time.Now()
 	root := &Box{
 		component: c,
 	}
 	if err := root.build(nil); err != nil {
 		return nil, err
 	}
-	log.Printf("initial build took %s", time.Since(start))
 	return root, nil
 }
 
 func (n *Box) build(prev *Box) error {
-	n.debug = true
-	if n.tag == "" || (prev != nil && n.component != prev.component) {
-		if prev != nil && n.isSubcomponent() && reflect.ValueOf(prev.component).Elem().Type().Name() == n.tag {
+	if n.parent == nil || (prev != nil && n.component != prev.component) {
+		if prev != nil && n.isSubcomponent() && prev.componentType() == n.tag {
 			n.component = prev.component
 		}
 		tmpl, err := template.New("").Parse(n.component.UI())
@@ -127,6 +126,13 @@ func (n *Box) isSubcomponent() bool {
 	return unicode.IsUpper(r)
 }
 
+func (n *Box) componentType() string {
+	if n == nil || n.component == nil {
+		return "<nil>"
+	}
+	return reflect.ValueOf(n.component).Elem().Type().Name()
+}
+
 func (n *Box) buildSubcomponent(prev *Box) error {
 	m := reflect.ValueOf(n.component).MethodByName(n.tag)
 	if !m.IsValid() {
@@ -162,16 +168,11 @@ func (n *Box) Update() error {
 	}
 	n.updateState(keys)
 	keys = keys[:0]
-	start := time.Now()
 	new := &Box{component: n.component}
 	if err := new.build(n); err != nil {
 		return err
 	}
 	*n = *new
-	elapsed := time.Since(start)
-	if elapsed >= 10*time.Millisecond {
-		log.Println(elapsed)
-	}
 	n.size()
 	n.grow()
 	n.justify()
@@ -208,21 +209,20 @@ func getState(rect image.Rectangle) State {
 }
 
 func (n *Box) String() string {
+	if n.parent != nil {
+		return n.parent.String()
+	}
 	buf := new(bytes.Buffer)
 	n.visit(0, func(depth int, n *Box) error {
 		for i := 0; i < depth; i++ {
-			buf.WriteByte(' ')
+			buf.WriteByte('\t')
 		}
-		buf.WriteString(n.tag)
-		buf.WriteByte(' ')
-		fmt.Fprintf(buf, "%q", n.content)
-		buf.WriteByte(' ')
-		if n.component == nil {
-			buf.WriteString("<nil>")
+		content := strings.TrimSpace(n.content)
+		if content != "" {
+			fmt.Fprintf(buf, "%s %s %s\n", n.tag, n.componentType(), content)
 		} else {
-			buf.WriteString(reflect.TypeOf(n.component).String())
+			fmt.Fprintf(buf, "%s %s\n", n.tag, n.componentType())
 		}
-		buf.WriteByte('\n')
 		return nil
 	})
 	return buf.String()
