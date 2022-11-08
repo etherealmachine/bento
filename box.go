@@ -42,21 +42,6 @@ type layout struct {
 	OuterWidth, OuterHeight     int `xml:",attr"`
 }
 
-func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
-	if n == nil {
-		return nil
-	}
-	if err := f(depth, n); err != nil {
-		return err
-	}
-	for _, c := range n.children {
-		if err := c.visit(depth+1, f); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func Build(c Component) (*Box, error) {
 	root := &Box{
 		component: c,
@@ -67,11 +52,30 @@ func Build(c Component) (*Box, error) {
 	return root, nil
 }
 
+func (n *Box) isSubcomponent() bool {
+	r, _ := utf8.DecodeRuneInString(n.tag)
+	return unicode.IsUpper(r)
+}
+
+func buildSubcomponent(name string, component interface{}) (*Box, error) {
+	m := reflect.ValueOf(component).MethodByName(name)
+	if !m.IsValid() {
+		return nil, fmt.Errorf("%s has no method named %s", reflect.TypeOf(component), name)
+	}
+	res := m.Call(nil)
+	if style, ok := res[0].Interface().(*Style); ok {
+		return &Box{
+			tag:   style.Extends,
+			style: style,
+		}, nil
+	} else if sub, ok := res[0].Interface().(Component); ok {
+		return Build(sub)
+	}
+	return nil, fmt.Errorf("%s.%s must return either Style or Component", reflect.TypeOf(component), name)
+}
+
 func (n *Box) build(prev *Box) error {
-	if n.parent == nil || (prev != nil && n.component != prev.component) {
-		if prev != nil && n.isSubcomponent() && prev.componentType() == n.tag {
-			n.component = prev.component
-		}
+	if n.tag == "" {
 		tmpl, err := template.New("").Parse(n.component.UI())
 		if err != nil {
 			return err
@@ -85,9 +89,11 @@ func (n *Box) build(prev *Box) error {
 		}
 	}
 	if n.isSubcomponent() {
-		if err := n.buildSubcomponent(prev); err != nil {
+		subNode, err := buildSubcomponent(n.tag, n.component)
+		if err != nil {
 			return err
 		}
+		*n = *subNode
 	}
 	if prev != nil {
 		n.state = prev.state
@@ -117,44 +123,6 @@ func (n *Box) build(prev *Box) error {
 		if err := child.build(prevChild); err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func (n *Box) isSubcomponent() bool {
-	r, _ := utf8.DecodeRuneInString(n.tag)
-	return unicode.IsUpper(r)
-}
-
-func (n *Box) componentType() string {
-	if n == nil || n.component == nil {
-		return "<nil>"
-	}
-	return reflect.ValueOf(n.component).Elem().Type().Name()
-}
-
-func (n *Box) buildSubcomponent(prev *Box) error {
-	m := reflect.ValueOf(n.component).MethodByName(n.tag)
-	if !m.IsValid() {
-		return fmt.Errorf("%s: failed to find method for tag %s", reflect.TypeOf(n.component), n.tag)
-	}
-	res := m.Call(nil)
-	if style, ok := res[0].Interface().(*Style); ok {
-		n.style = style
-		n.tag = style.Extends
-	} else if child, ok := res[0].Interface().(Component); ok {
-		b := &Box{
-			component: child,
-		}
-		if err := b.build(prev); err != nil {
-			return err
-		}
-		for name, value := range n.attrs {
-			b.attrs[name] = value
-		}
-		b.parent = n.parent
-		b.component = child
-		*n = *b
 	}
 	return nil
 }
@@ -208,6 +176,21 @@ func getState(rect image.Rectangle) State {
 	return Idle
 }
 
+func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
+	if n == nil {
+		return nil
+	}
+	if err := f(depth, n); err != nil {
+		return err
+	}
+	for _, c := range n.children {
+		if err := c.visit(depth+1, f); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (n *Box) String() string {
 	if n.parent != nil {
 		return n.parent.String()
@@ -217,12 +200,16 @@ func (n *Box) String() string {
 		for i := 0; i < depth; i++ {
 			buf.WriteByte('\t')
 		}
-		content := strings.TrimSpace(n.content)
-		if content != "" {
-			fmt.Fprintf(buf, "%s %s %s\n", n.tag, n.componentType(), content)
-		} else {
-			fmt.Fprintf(buf, "%s %s\n", n.tag, n.componentType())
+		buf.WriteString(n.tag)
+		if n.parent == nil || n.component != n.parent.component {
+			buf.WriteByte(' ')
+			buf.WriteString(reflect.ValueOf(n.component).Elem().Type().Name())
 		}
+		if content := strings.TrimSpace(n.content); content != "" {
+			buf.WriteByte(' ')
+			buf.WriteString(content)
+		}
+		buf.WriteByte('\n')
 		return nil
 	})
 	return buf.String()
