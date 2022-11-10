@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"reflect"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -66,11 +65,15 @@ func (n *Box) Draw(img *ebiten.Image) {
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
+		txt := n.Content
+		if txt == "" {
+			txt = n.attrs["placeholder"]
+		}
 		if n.Tag == "input" {
-			text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
+			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
 		} else {
 			n.scrollable.position = text.DrawParagraph(
-				img, n.Content, n.style.Font, n.style.Color,
+				img, txt, n.style.Font, n.style.Color,
 				n.maxContentWidth(), n.maxContentHeight(),
 				n.editable.Cursor(), n.scrollable.line,
 				*op)
@@ -80,11 +83,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 			}
 		}
 	case "canvas":
-		reflect.ValueOf(n.Component).MethodByName(n.attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.Tag)
 	}
+	n.fireEvent(Draw)
 
 	if n.Debug {
 		op := new(ebiten.DrawImageOptions)

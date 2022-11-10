@@ -1,10 +1,3 @@
-# Clean up state and refactor drawing
-State and drawing could ideally be moved to Draw and Update methods for the individual tags. This
-would be especially nice if they used a common callback and event API. Ideally there's no real
-difference between the built-in tags like input and textarea and a custom component.
-
-# Repeating and conditional elements
-
 # Improve demo
 Make the demo an interactive walkthrough showcasing the features and syntax
 

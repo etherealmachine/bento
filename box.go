@@ -3,6 +3,7 @@ package bento
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"reflect"
 	"strings"
 
@@ -60,16 +61,30 @@ func (n *Box) Update() error {
 	if !n.style.display() || n.style.hidden() {
 		return nil
 	}
-	n.State = getState(n.innerRect())
+	n.State = Idle
+	if n.attrs["disabled"] == "true" {
+		n.State = Disabled
+	} else {
+		x, y := ebiten.CursorPosition()
+		if inside(n.innerRect(), x, y) {
+			if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+				n.State = Active
+				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+					n.fireEvent("Click")
+				}
+			} else {
+				n.State = Hover
+				n.fireEvent("Hover")
+			}
+		}
+	}
 	if err := n.editable.Update(n); err != nil {
 		return err
 	}
 	if err := n.scrollable.Update(n); err != nil {
 		return err
 	}
-	if n.State == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		n.fireEvent("Click")
-	}
+	n.fireEvent(Update)
 	for _, child := range n.Children {
 		if err := child.Update(); err != nil {
 			return err
@@ -135,4 +150,15 @@ func (n *Box) String() string {
 		return nil
 	})
 	return buf.String()
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func inside(r image.Rectangle, x, y int) bool {
+	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
 }

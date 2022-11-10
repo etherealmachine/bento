@@ -14,7 +14,7 @@ type Scrollable struct {
 }
 
 func (s *Scrollable) Update(b *Box) error {
-	if b.style.Scrollbar == nil {
+	if b.style.Scrollbar == nil || b.attrs["disabled"] == "true" {
 		return nil
 	}
 	mt, _, _, ml := b.style.margin()
@@ -26,7 +26,14 @@ func (s *Scrollable) Update(b *Box) error {
 		}
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(b.X+ml+pl+pl, b.Y+mt+pt-pt))
-		s.state[i] = getState(r)
+		s.state[i] = Idle
+		x, y := ebiten.CursorPosition()
+		if inside(r, x, y) {
+			s.state[i] = Hover
+			if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+				s.state[i] = Active
+			}
+		}
 		if s.state[i] == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if i == 0 {
 				s.line--

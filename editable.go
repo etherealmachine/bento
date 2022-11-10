@@ -25,12 +25,8 @@ func (e *Editable) Update(b *Box) error {
 	if e == nil {
 		return nil
 	}
-	t := time.Now().UnixMilli()
-	if t-e.cursorTime <= 1000 {
-		e.displayCursor = true
-	} else if t-e.cursorTime >= 2000 {
-		e.cursorTime = t
-		e.displayCursor = false
+	if b.State == Disabled {
+		return nil
 	}
 	if b.State == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		e.focus = true
@@ -38,6 +34,13 @@ func (e *Editable) Update(b *Box) error {
 		e.focus = false
 	}
 	if e.focus {
+		t := time.Now().UnixMilli()
+		e.displayCursor = false
+		if t-e.cursorTime <= 1000 {
+			e.displayCursor = true
+		} else if t-e.cursorTime >= 2000 {
+			e.cursorTime = t
+		}
 		v := b.Content
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
@@ -45,17 +48,17 @@ func (e *Editable) Update(b *Box) error {
 				if s != "" && s != "\n" {
 					v = v[:e.cursor] + s + v[e.cursor:]
 					e.cursor++
-					e.cursorTime = time.Now().UnixMilli()
+					e.cursorTime = t
 				} else if e.cursor > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
 					v = v[:e.cursor-1] + v[e.cursor:]
 					e.cursor--
-					e.cursorTime = time.Now().UnixMilli()
+					e.cursorTime = t
 				} else if e.cursor > 0 && k == ebiten.KeyLeft {
 					e.cursor--
-					e.cursorTime = time.Now().UnixMilli()
+					e.cursorTime = t
 				} else if e.cursor < len(v) && k == ebiten.KeyRight {
 					e.cursor++
-					e.cursorTime = time.Now().UnixMilli()
+					e.cursorTime = t
 				}
 				// TODO: ebiten.KeyUp, ebiten.KeyDown
 			}
@@ -64,6 +67,8 @@ func (e *Editable) Update(b *Box) error {
 			b.Content = v
 			b.fireEvent(Change)
 		}
+	} else {
+		e.displayCursor = false
 	}
 	return nil
 }

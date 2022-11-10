@@ -68,6 +68,7 @@ func (n *Box) build(prev *Box) error {
 		return err
 	}
 	if prev != nil && n.Tag == prev.Tag {
+		n.State = prev.State
 		n.editable = prev.editable
 		n.scrollable = prev.scrollable
 		n.Debug = prev.Debug

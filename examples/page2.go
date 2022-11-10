@@ -18,9 +18,13 @@ func (p *Page2) Click() {
 	p.Clicks++
 }
 
-func (p *Page2) Change(event *bento.Event) {
+func (p *Page2) UpdateText(event *bento.Event) {
 	p.Title = event.Box.Content
 	p.InputText = event.Box.Content
+}
+
+func (p *Page2) UpdateContent(event *bento.Event) {
+	p.Content = event.Box.Content
 }
 
 func (p *Page2) Reset() {
@@ -80,18 +84,14 @@ func (p *Page2) Input() *bento.Style {
 }
 
 func (p *Page2) UI() string {
-	return `<col grow="1" justify="center" border="frame.png 10">
+	return `<col onDraw="Draw" grow="1" justify="center" border="frame.png 10">
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
 		<col grow="1">
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{ .Title }}</text>
-			<Input onChange="Change" grow="1 0" color="#ffffff">
-				{{ if eq .InputText "" }}
-					Title
-				{{ else }}
-					{{ .InputText }}
-				{{ end }}
+			<Input onChange="UpdateText" placeholder="Title" grow="1 0" color="#ffffff">
+				{{ .InputText }}
 			</Input>
-			<textarea grow="1" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6lh" scrollbar="scrollbar.png 6">
+			<textarea onChange="UpdateContent" grow="1" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6lh" scrollbar="scrollbar.png 6">
 				{{ .Content }}
 			</textarea>
 		</col>
