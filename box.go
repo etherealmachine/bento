@@ -50,7 +50,9 @@ func (n *Box) Update() error {
 }
 
 func (n *Box) Rebuild() error {
-	new := &Box{Component: n.Component}
+	new := &Box{
+		Component: n.Component,
+	}
 	if err := new.build(n); err != nil {
 		return err
 	}
@@ -70,7 +72,6 @@ func (n *Box) ToggleDebug() {
 		n.Debug = !n.Debug
 		return nil
 	})
-	n.Rebuild()
 }
 
 func (n *Box) String() string {
@@ -82,24 +83,21 @@ func (n *Box) String() string {
 		for i := 0; i < depth; i++ {
 			buf.WriteByte('\t')
 		}
-		buf.WriteString(n.Tag)
-		buf.WriteByte(' ')
+		row := []string{n.Tag}
 		if n.Debug {
-			buf.WriteString("Debug")
-			buf.WriteByte(' ')
+			row = append(row, "Debug")
 		}
 		if n.Parent == nil || n.Component != n.Parent.Component {
-			fmt.Fprintf(buf, "<%s>", reflect.ValueOf(n.Component).Elem().Type().Name())
-			buf.WriteByte(' ')
+			row = append(row, fmt.Sprintf("<%s>", reflect.ValueOf(n.Component).Elem().Type().Name()))
 		}
-		if content := strings.TrimSpace(n.Content); content != "" {
+		if n.Content != "" {
 			if len(n.Content) > 20 {
-				buf.WriteString(strings.TrimSpace(content[:20]))
-				buf.WriteString("...")
+				row = append(row, strings.TrimSpace(n.Content[:20])+"...")
 			} else {
-				buf.WriteString(content)
+				row = append(row, n.Content)
 			}
 		}
+		buf.WriteString(strings.Join(row, " "))
 		buf.WriteByte('\n')
 		return nil
 	})

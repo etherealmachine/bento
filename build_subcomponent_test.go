@@ -42,8 +42,8 @@ func TestBuildSubcomponent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `col ComponentWithSub
-	col SubComponent
+	want := `col <ComponentWithSub>
+	col <SubComponent>
 		text 2
 	text Hello World
 `
@@ -59,8 +59,8 @@ func TestRebuildSubcomponent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `col ComponentWithSub
-	col SubComponent
+	want := `col <ComponentWithSub>
+	col <SubComponent>
 		text 2
 	text Hello World
 `
@@ -70,12 +70,10 @@ func TestRebuildSubcomponent(t *testing.T) {
 	}
 
 	c.Count = 0
-	new := &Box{Component: c}
-	if err := new.build(box); err != nil {
+	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
-	*box = *new
-	want = `col ComponentWithSub
+	want = `col <ComponentWithSub>
 	text Hello World
 `
 	got = box.String()
@@ -85,13 +83,11 @@ func TestRebuildSubcomponent(t *testing.T) {
 
 	c.Count = 1
 	c.sub.Count = 3
-	new = &Box{Component: c}
-	if err := new.build(box); err != nil {
+	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
-	*box = *new
-	want = `col ComponentWithSub
-	col SubComponent
+	want = `col <ComponentWithSub>
+	col <SubComponent>
 		text 3
 	text Hello World
 `

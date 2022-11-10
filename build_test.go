@@ -50,7 +50,7 @@ func TestBuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `col BasicComponent
+	want := `col <BasicComponent>
 	row
 		text 5
 	col
@@ -75,12 +75,10 @@ func TestRebuild(t *testing.T) {
 	}
 
 	c.Count = 0
-	new := &Box{Component: c}
-	if err := new.build(box); err != nil {
+	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
-	*box = *new
-	want := `col BasicComponent
+	want := `col <BasicComponent>
 	row
 		text 0
 `
@@ -90,12 +88,10 @@ func TestRebuild(t *testing.T) {
 	}
 
 	c.Count = 1
-	new = &Box{Component: c}
-	if err := new.build(box); err != nil {
+	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
-	*box = *new
-	want = `col BasicComponent
+	want = `col <BasicComponent>
 	row
 		text 1
 	col
@@ -107,12 +103,10 @@ func TestRebuild(t *testing.T) {
 	}
 
 	c.Count = 2
-	new = &Box{Component: c}
-	if err := new.build(box); err != nil {
+	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
-	*box = *new
-	want = `col BasicComponent
+	want = `col <BasicComponent>
 	row
 		text 2
 `
