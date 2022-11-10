@@ -81,7 +81,7 @@ func (s *Style) adopt(node *Box) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
-	for k, v := range node.Attrs {
+	for k, v := range node.attrs {
 		if _, exists := s.Attrs[k]; !exists {
 			s.Attrs[k] = v
 		}
@@ -139,31 +139,31 @@ func (s *Style) growth() (int, int) {
 }
 
 func (s *Style) display() bool {
-	return s.node.Attrs["display"] != "false"
+	return s.node.attrs["display"] != "false"
 }
 
 func (s *Style) hidden() bool {
-	return s.node.Attrs["hidden"] == "true"
+	return s.node.attrs["hidden"] == "true"
 }
 
 func (n *Box) styleSize() {
-	if n.Style == nil {
+	if n.style == nil {
 		return
 	}
-	n.ContentWidth += n.Style.scrollBarWidth()
-	if n.Style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.Style.MinWidth)
+	n.ContentWidth += n.style.scrollBarWidth()
+	if n.style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
 	}
-	if n.Style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.Style.MinHeight)
+	if n.style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
 	}
 	if n.Tag == "p" {
-		metrics := n.Style.Font.Metrics()
+		metrics := n.style.Font.Metrics()
 		minHeight := metrics.Height.Round()
 		n.ContentHeight = max(n.ContentHeight, minHeight)
 	}
-	if n.Style.MaxHeight > 0 && n.ContentHeight > n.Style.MaxHeight {
-		n.ContentHeight = n.Style.MaxHeight
+	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
+		n.ContentHeight = n.style.MaxHeight
 	}
 }
 

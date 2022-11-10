@@ -1,132 +1,71 @@
 package bento
 
 import (
-	"image"
-	"log"
-	"reflect"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-var (
-	Scrollspeed = 0.1
-)
-
-type State int
-
-const (
-	Idle     = State(0)
-	Hover    = State(1)
-	Active   = State(2)
-	Disabled = State(3)
-)
-
-type Event struct {
-	X, Y int
-	Box  *Box
+type Editable struct {
+	cursor        int
+	cursorTime    int64
+	displayCursor bool
+	focus         bool
 }
 
-type state struct {
-	state          State
-	scrollState    [4]State
-	cursor         int
-	scrollLine     int
-	scrollPosition float64
-	cursorTime     int64
+func (e *Editable) Cursor() int {
+	if e.displayCursor {
+		return e.cursor
+	}
+	return -1
 }
 
-func (n *Box) updateState(keys []ebiten.Key) {
-	if !n.Style.display() || n.Style.hidden() {
-		return
+func (e *Editable) Update(b *Box) error {
+	if e == nil {
+		return nil
 	}
-	if n.Tag == "input" || n.Tag == "textarea" {
-		n.updateInput()
-	} else {
-		n.state.state = getState(n.innerRect())
+	t := time.Now().UnixMilli()
+	if t-e.cursorTime <= 1000 {
+		e.displayCursor = true
+	} else if t-e.cursorTime >= 2000 {
+		e.cursorTime = t
+		e.displayCursor = false
 	}
-	if n.Style.Scrollbar != nil {
-		n.updateScroll()
+	if b.State == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		e.focus = true
+	} else if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		e.focus = false
 	}
-	if n.state.state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && n.Attrs["onClick"] != "" {
-		x, y := ebiten.CursorPosition()
-		attr := n.Attrs["onClick"]
-		m := reflect.ValueOf(n.Component).MethodByName(attr)
-		if !m.IsValid() {
-			log.Fatalf("%s can't find onClick handler named %q in component %s", n.Tag, attr, reflect.TypeOf(n.Component))
-		}
-		var args []reflect.Value
-		if m.Type().NumIn() == 1 {
-			args = []reflect.Value{reflect.ValueOf(&Event{
-				X:   x - n.X,
-				Y:   y - n.Y,
-				Box: n,
-			})}
-		}
-		m.Call(args)
-	}
-	for _, c := range n.Children {
-		c.updateState(keys)
-	}
-}
-
-func (n *Box) updateInput() {
-	state := getState(n.innerRect())
-	if state == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		n.state.state = Active
-	} else if n.state.state != Active || inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		n.state.state = state
-	}
-	if n.state.state == Active {
-		v := n.Attrs["value"]
+	if e.focus {
+		v := b.Content
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
 				if s != "" && s != "\n" {
-					v = v[:n.cursor] + s + v[n.cursor:]
-					n.cursor++
-					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursor > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
-					v = v[:n.cursor-1] + v[n.cursor:]
-					n.cursor--
-					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursor > 0 && k == ebiten.KeyLeft {
-					n.cursor--
-					n.cursorTime = time.Now().UnixMilli()
-				} else if n.cursor < len(v) && k == ebiten.KeyRight {
-					n.cursor++
-					n.cursorTime = time.Now().UnixMilli()
+					v = v[:e.cursor] + s + v[e.cursor:]
+					e.cursor++
+					e.cursorTime = time.Now().UnixMilli()
+				} else if e.cursor > 0 && len(v) > 0 && k == ebiten.KeyBackspace {
+					v = v[:e.cursor-1] + v[e.cursor:]
+					e.cursor--
+					e.cursorTime = time.Now().UnixMilli()
+				} else if e.cursor > 0 && k == ebiten.KeyLeft {
+					e.cursor--
+					e.cursorTime = time.Now().UnixMilli()
+				} else if e.cursor < len(v) && k == ebiten.KeyRight {
+					e.cursor++
+					e.cursorTime = time.Now().UnixMilli()
 				}
 				// TODO: ebiten.KeyUp, ebiten.KeyDown
 			}
 		}
-		n.Attrs["value"] = v
-	}
-}
-
-func (n *Box) updateScroll() {
-	mt, _, _, ml := n.Style.margin()
-	pt, _, _, pl := n.Style.padding()
-	rects := n.scrollRects(n.scrollPosition)
-	for i := 0; i < 4; i++ {
-		if i == 2 {
-			continue
-		}
-		// TODO: the math here works out but it's confusing
-		r := rects[i].Add(image.Pt(n.X+ml+pl+pl, n.Y+mt+pt-pt))
-		n.scrollState[i] = getState(r)
-		if n.scrollState[i] == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			if i == 0 {
-				n.scrollLine--
-				if n.scrollLine < 0 {
-					n.scrollLine = 0
-				}
-			} else if i == 3 && n.scrollPosition < 1 {
-				n.scrollLine++
-			}
+		if b.Content != v {
+			b.Content = v
+			b.fireEvent(Change)
 		}
 	}
+	return nil
 }
 
 func repeatingKeyPressed(key ebiten.Key) bool {

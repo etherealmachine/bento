@@ -14,17 +14,28 @@ type Component interface {
 	UI() string
 }
 
+type State int
+
+const (
+	Idle     = State(0)
+	Hover    = State(1)
+	Active   = State(2)
+	Disabled = State(3)
+)
+
 type Box struct {
-	Tag       string
-	Parent    *Box
-	Children  []*Box
-	Style     *Style
-	Debug     bool
-	Attrs     map[string]string
-	Content   string
-	Component Component
-	Layout
-	state
+	Tag        string
+	Parent     *Box
+	Children   []*Box
+	Debug      bool
+	Content    string
+	Component  Component
+	State      State
+	style      *Style
+	attrs      map[string]string
+	scrollable Scrollable
+	editable   *Editable
+	layout
 }
 
 func Build(c Component) (*Box, error) {
@@ -40,13 +51,35 @@ func Build(c Component) (*Box, error) {
 var keys []ebiten.Key
 
 func (n *Box) Update() error {
-	keys = inpututil.AppendPressedKeys(keys)
-	if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
-		n.ToggleDebug()
+	if n.Parent == nil {
+		keys = inpututil.AppendPressedKeys(keys)
+		if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
+			n.ToggleDebug()
+		}
 	}
-	n.updateState(keys)
-	keys = keys[:0]
-	return n.Rebuild()
+	if !n.style.display() || n.style.hidden() {
+		return nil
+	}
+	n.State = getState(n.innerRect())
+	if err := n.editable.Update(n); err != nil {
+		return err
+	}
+	if err := n.scrollable.Update(n); err != nil {
+		return err
+	}
+	if n.State == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		n.fireEvent("Click")
+	}
+	for _, child := range n.Children {
+		if err := child.Update(); err != nil {
+			return err
+		}
+	}
+	if n.Parent == nil {
+		keys = keys[:0]
+		return n.Rebuild()
+	}
+	return nil
 }
 
 func (n *Box) Rebuild() error {

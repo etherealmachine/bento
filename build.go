@@ -7,13 +7,10 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"image"
 	"reflect"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (n *Box) isSubcomponent() bool {
@@ -28,7 +25,7 @@ func (n *Box) buildSubcomponent() error {
 	}
 	res := m.Call(nil)
 	if style, ok := res[0].Interface().(*Style); ok {
-		n.Style = style
+		n.style = style
 		n.Tag = style.Extends
 		return nil
 	} else if sub, ok := res[0].Interface().(Component); ok {
@@ -54,6 +51,7 @@ func (n *Box) build(prev *Box) error {
 			return err
 		}
 		if err := xml.Unmarshal(buf.Bytes(), n); err != nil {
+			// TODO: Good error reporting if parsing the XML fails
 			return fmt.Errorf("error building %s: %s", reflect.ValueOf(n.Component).Elem().Type().Name(), err)
 		}
 	}
@@ -62,25 +60,23 @@ func (n *Box) build(prev *Box) error {
 			return err
 		}
 	}
-	if prev != nil && n.Tag == prev.Tag {
-		n.Debug = prev.Debug
-		n.state = prev.state
-		if n.Tag == "input" || n.Tag == "textarea" {
-			n.Attrs["value"] = prev.Attrs["value"]
-			n.Attrs["placeholder"] = prev.Attrs["placeholder"]
-		}
+	if n.style == nil {
+		n.style = new(Style)
 	}
-	if n.Style == nil {
-		n.Style = new(Style)
-	}
-	n.Style.adopt(n)
-	if err := n.Style.parseAttributes(); err != nil {
+	n.style.adopt(n)
+	if err := n.style.parseAttributes(); err != nil {
 		return err
 	}
-	if n.Tag == "input" || n.Tag == "textarea" {
-		n.cursor = len(n.Attrs["value"])
+	if prev != nil && n.Tag == prev.Tag {
+		n.editable = prev.editable
+		n.scrollable = prev.scrollable
+		n.Debug = prev.Debug
+	} else {
+		if n.Tag == "input" || n.Tag == "textarea" {
+			n.editable = &Editable{}
+		}
 	}
-	if !n.Style.display() || n.Style.hidden() {
+	if !n.style.display() || n.style.hidden() {
 		return nil
 	}
 	for i, child := range n.Children {
@@ -97,28 +93,6 @@ func (n *Box) build(prev *Box) error {
 		}
 	}
 	return nil
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func inside(r image.Rectangle, x, y int) bool {
-	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
-}
-
-func getState(rect image.Rectangle) State {
-	x, y := ebiten.CursorPosition()
-	if inside(rect, x, y) {
-		if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-			return Active
-		}
-		return Hover
-	}
-	return Idle
 }
 
 func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {

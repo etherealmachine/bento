@@ -10,7 +10,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type Layout struct {
+type layout struct {
 	X, Y                        int `xml:",attr"`
 	ContentWidth, ContentHeight int `xml:",attr"`
 	InnerWidth, InnerHeight     int `xml:",attr"`
@@ -26,14 +26,28 @@ func (n *Box) outerRect() image.Rectangle {
 }
 
 func (n *Box) innerRect() image.Rectangle {
-	mt, _, _, ml := n.Style.margin()
+	mt, _, _, ml := n.style.margin()
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
+}
+
+func (n *Box) maxContentWidth() int {
+	if n.style.MaxWidth > 0 {
+		return n.style.MaxWidth
+	}
+	return n.ContentWidth
+}
+
+func (n *Box) maxContentHeight() int {
+	if n.style.MaxHeight > 0 {
+		return n.style.MaxHeight
+	}
+	return n.ContentHeight
 }
 
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.Style.display() {
+	if !n.style.display() {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
@@ -41,25 +55,25 @@ func (n *Box) size() {
 		return
 	}
 	if n.Tag == "button" || n.Tag == "text" {
-		bounds := text.BoundString(n.Style.Font, n.Content)
+		bounds := text.BoundString(n.style.Font, n.Content)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
+		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "p" {
-		bounds := text.BoundParagraph(n.Style.Font, n.Content, n.Style.MaxWidth)
+		bounds := text.BoundParagraph(n.style.Font, n.Content, n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
-	} else if n.Tag == "img" && n.Style.Image != nil {
-		bounds := n.Style.Image.Bounds()
+		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
+	} else if n.Tag == "img" && n.style.Image != nil {
+		bounds := n.style.Image.Bounds()
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	} else if n.Tag == "input" {
-		bounds := text.BoundString(n.Style.Font, n.Attrs["placeholder"])
+		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
+		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "textarea" {
-		bounds := text.BoundParagraph(n.Style.Font, n.Attrs["value"], n.Style.MaxWidth)
+		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
+		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
 	} else if n.Tag != "canvas" && n.Tag != "row" && n.Tag != "col" {
 		log.Fatalf("can't size %s", n.Tag)
 	}
@@ -75,8 +89,8 @@ func (n *Box) size() {
 		}
 	}
 	n.styleSize()
-	mt, mr, mb, ml := n.Style.margin()
-	pt, pr, pb, pl := n.Style.padding()
+	mt, mr, mb, ml := n.style.margin()
+	pt, pr, pb, pl := n.style.padding()
 	n.InnerWidth = n.ContentWidth + pl + pr
 	n.InnerHeight = n.ContentHeight + pt + pb
 	n.OuterWidth = n.InnerWidth + ml + mr
@@ -85,27 +99,27 @@ func (n *Box) size() {
 
 func (n *Box) grow() {
 	w, h := ebiten.WindowSize()
-	if n.Style != nil && n.Style.HGrow > 0 && n.Parent == nil {
+	if n.style != nil && n.style.HGrow > 0 && n.Parent == nil {
 		n.fillWidth(w)
 	}
-	if n.Style != nil && n.Style.VGrow > 0 && n.Parent == nil {
+	if n.style != nil && n.style.VGrow > 0 && n.Parent == nil {
 		n.fillHeight(h)
 	}
 	hgrow, vgrow := 0, 0
 	for _, c := range n.Children {
-		if !c.Style.display() {
+		if !c.style.display() {
 			continue
 		}
-		hg, vg := c.Style.growth()
+		hg, vg := c.style.growth()
 		hgrow += hg
 		vgrow += vg
 	}
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
-		if !c.Style.display() {
+		if !c.style.display() {
 			continue
 		}
-		hg, vg := c.Style.growth()
+		hg, vg := c.style.growth()
 		if hg > 0 {
 			if n.Tag == "row" {
 				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
@@ -124,7 +138,7 @@ func (n *Box) grow() {
 		}
 	}
 	for _, c := range n.Children {
-		if !c.Style.display() {
+		if !c.style.display() {
 			continue
 		}
 		c.grow()
@@ -135,8 +149,8 @@ func (n *Box) fillWidth(w int) {
 	if w < n.OuterWidth {
 		return
 	}
-	_, mr, _, ml := n.Style.margin()
-	_, pr, _, pl := n.Style.padding()
+	_, mr, _, ml := n.style.margin()
+	_, pr, _, pl := n.style.padding()
 	n.OuterWidth = w
 	n.InnerWidth = n.OuterWidth - ml - mr
 	n.ContentWidth = n.InnerWidth - pr - pl
@@ -146,8 +160,8 @@ func (n *Box) fillHeight(h int) {
 	if h < n.OuterHeight {
 		return
 	}
-	mt, _, mb, _ := n.Style.margin()
-	pt, _, pb, _ := n.Style.padding()
+	mt, _, mb, _ := n.style.margin()
+	pt, _, pb, _ := n.style.padding()
 	n.OuterHeight = h
 	n.InnerHeight = n.OuterHeight - mt - mb
 	n.ContentHeight = n.InnerHeight - pt - pb
@@ -179,13 +193,13 @@ func (n *Box) space() (int, int) {
 func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
-	hj, vj := n.Style.justification()
+	hj, vj := n.style.justification()
 	for _, c := range n.Children {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 		var ox, oy int
-		if c.Style != nil {
-			ox, oy = c.Style.OffsetX, c.Style.OffsetY
+		if c.style != nil {
+			ox, oy = c.style.OffsetX, c.style.OffsetY
 		}
 		if ox < 0 {
 			ox = n.InnerWidth - c.OuterWidth + ox + 1

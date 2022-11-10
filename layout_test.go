@@ -6,8 +6,8 @@ import (
 
 func TestJustificationExtraSpace(t *testing.T) {
 	n := &Box{}
-	n.Layout.InnerWidth = 20
-	n.Layout.InnerHeight = 20
+	n.layout.InnerWidth = 20
+	n.layout.InnerHeight = 20
 	bounds := [][2]int{
 		{2, 1},
 		{3, 2},
@@ -91,14 +91,14 @@ func TestJustificationExtraSpace(t *testing.T) {
 		n.Children = nil
 		for _, b := range bounds {
 			n.Children = append(n.Children, &Box{
-				Layout: Layout{
+				layout: layout{
 					OuterWidth:  b[0],
 					OuterHeight: b[1],
 				},
 			})
 		}
 		n.Tag = test.tag
-		n.Style = &Style{
+		n.style = &Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}
@@ -113,8 +113,8 @@ func TestJustificationExtraSpace(t *testing.T) {
 
 func TestJustificationNoExtraSpace(t *testing.T) {
 	n := &Box{}
-	n.Layout.InnerWidth = 14
-	n.Layout.InnerHeight = 4
+	n.layout.InnerWidth = 14
+	n.layout.InnerHeight = 4
 	bounds := [][2]int{
 		{2, 1},
 		{3, 2},
@@ -165,14 +165,14 @@ func TestJustificationNoExtraSpace(t *testing.T) {
 		n.Children = nil
 		for _, b := range bounds {
 			n.Children = append(n.Children, &Box{
-				Layout: Layout{
+				layout: layout{
 					OuterWidth:  b[0],
 					OuterHeight: b[1],
 				},
 			})
 		}
 		n.Tag = test.tag
-		n.Style = &Style{
+		n.style = &Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}

@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"log"
 	"reflect"
-	"time"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,11 +13,11 @@ import (
 )
 
 func (n *Box) Draw(img *ebiten.Image) {
-	if n.Style.hidden() || !n.Style.display() {
+	if n.style.hidden() || !n.style.display() {
 		return
 	}
-	mt, _, _, ml := n.Style.margin()
-	pt, _, _, pl := n.Style.padding()
+	mt, _, _, ml := n.style.margin()
+	pt, _, _, pl := n.style.padding()
 
 	op := new(ebiten.DrawImageOptions)
 	op.GeoM.Translate(float64(n.X), float64(n.Y))
@@ -34,15 +33,15 @@ func (n *Box) Draw(img *ebiten.Image) {
 		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
 
-	if n.Style != nil && n.Style.Border != nil {
-		n.Style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	if n.style != nil && n.style.Border != nil {
+		n.style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	switch n.Tag {
 	case "button":
-		n.Style.Button[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Button[int(n.State)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
-		n.Style.Input[int(n.state.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Input[int(n.State)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
@@ -53,44 +52,35 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.Tag {
 	case "button", "text":
-		text.DrawString(img, n.Content, n.Style.Font, n.Style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
+		text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
-		maxHeight := n.Style.MaxHeight
-		if n.Style.MaxHeight != 0 {
-			maxHeight = max(maxHeight, n.ContentHeight)
-		}
-		n.scrollPosition = text.DrawParagraph(img, n.Content, n.Style.Font, n.Style.Color, n.Style.MaxWidth, maxHeight, -1, n.scrollLine, *op)
-		if n.scrollPosition >= 0 {
+		n.scrollable.position = text.DrawParagraph(
+			img, n.Content, n.style.Font, n.style.Color,
+			n.maxContentWidth(), n.maxContentHeight(),
+			-1, n.scrollable.line,
+			*op)
+		if n.scrollable.position >= 0 {
 			op.GeoM.Translate(float64(pl), -float64(pt))
 			n.drawScrollbar(img, op)
 		}
 	case "img":
-		img.DrawImage(n.Style.Image, op)
+		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
-		txt := n.Attrs["value"]
-		if txt == "" && n.state.state != Active {
-			txt = n.Attrs["placeholder"]
-		}
-		cursor := -1
-		if n.state.state == Active {
-			t := time.Now().UnixMilli()
-			if t-n.cursorTime <= 1000 {
-				cursor = n.cursor
-			} else if t-n.cursorTime >= 2000 {
-				n.cursorTime = t
-			}
-		}
 		if n.Tag == "input" {
-			text.DrawString(img, txt, n.Style.Font, n.Style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, cursor, *op)
+			text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
 		} else {
-			n.scrollPosition = text.DrawParagraph(img, txt, n.Style.Font, n.Style.Color, n.Style.MaxWidth, n.Style.MaxHeight, cursor, n.scrollLine, *op)
-			if n.scrollPosition >= 0 {
+			n.scrollable.position = text.DrawParagraph(
+				img, n.Content, n.style.Font, n.style.Color,
+				n.maxContentWidth(), n.maxContentHeight(),
+				n.editable.Cursor(), n.scrollable.line,
+				*op)
+			if n.scrollable.position >= 0 {
 				op.GeoM.Translate(float64(pl), -float64(pt))
 				n.drawScrollbar(img, op)
 			}
 		}
 	case "canvas":
-		reflect.ValueOf(n.Component).MethodByName(n.Attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
+		reflect.ValueOf(n.Component).MethodByName(n.attrs["draw"]).Call([]reflect.Value{reflect.ValueOf(img)})
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.Tag)
@@ -136,15 +126,15 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 }
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
-	for i, r := range n.scrollRects(n.scrollPosition) {
-		btn := n.Style.Scrollbar[int(n.scrollState[i])][i]
+	for i, r := range n.scrollRects(n.scrollable.position) {
+		btn := n.style.Scrollbar[int(n.scrollable.state[i])][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
 }
 
 func (n *Box) scrollRects(scrollPos float64) [4]image.Rectangle {
 	var rects [4]image.Rectangle
-	s := n.Style.Scrollbar[0][0].Width()
+	s := n.style.Scrollbar[0][0].Width()
 	sf := float64(s)
 	trackHeight := float64(n.InnerHeight) - 2.5*sf
 	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)               // top button

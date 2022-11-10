@@ -11,14 +11,16 @@ type Page2 struct {
 	Clicks         int
 	Paragraphs     []string
 	Title, Content string
+	InputText      string
 }
 
 func (p *Page2) Click() {
 	p.Clicks++
 }
 
-func (p *Page2) Change(old, new string) {
-	p.Title = new
+func (p *Page2) Change(event *bento.Event) {
+	p.Title = event.Box.Content
+	p.InputText = event.Box.Content
 }
 
 func (p *Page2) Reset() {
@@ -82,18 +84,16 @@ func (p *Page2) UI() string {
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">Page 2</text>
 		<col grow="1">
 			<text font="RobotoMono 24" color="#ffffff" margin="4px" padding="12px">{{ .Title }}</text>
-			<row>
-				<img src="profile.png"/>
-				<p grow="1" padding="24px" font="NotoSans 16" color="#ffffff" maxWidth="80em">{{.Content}}</p>
-			</row>
-			<Input onChange="Change" grow="1 0" placeholder="Title" color="#ffffff" />
-			<textarea grow="1" value="Content" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6lh" scrollbar="scrollbar.png 6" />
+			<Input onChange="Change" grow="1 0" color="#ffffff">
+				{{ if eq .InputText "" }}
+					Title
+				{{ else }}
+					{{ .InputText }}
+				{{ end }}
+			</Input>
+			<textarea grow="1" color="#ffffff" margin="4px" padding="1em" input="textarea.png 6" maxHeight="6lh" scrollbar="scrollbar.png 6">
+				{{ .Content }}
+			</textarea>
 		</col>
-		<Text grow="0 1" border="frame.png 10">{{ index .Paragraphs 1 }}
-{{ index .Paragraphs 2 }}</Text>
-		<row grow="1 0">
-			<Button onClick="Click">Clicks: {{ .Clicks }}</Button>
-			<button onClick="Reset" color="#ffffff" margin="4px" padding="12px" btn="button.png 6">Reset</button>
-		</row>
 	</col>`
 }
