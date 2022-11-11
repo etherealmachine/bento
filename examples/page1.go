@@ -7,7 +7,7 @@ type Page1 struct {
 	Paragraphs []string
 }
 
-func (p *Page1) Click() {
+func (p *Page1) Click(event *bento.Event) {
 	p.Clicks++
 }
 
@@ -16,7 +16,7 @@ func (p *Page1) Debug(event *bento.Event) {
 }
 
 func (p *Page1) UI() string {
-	return `<col grow="1" justify="start" margin="24px 0 0 24px">
+	return `<col grow="1" justify="start" margin="24px">
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">
 			What is Bento?
 		</text>
@@ -55,7 +55,7 @@ It even supports scrollable paragraphs of text!
 			</p>
 			<row justify="start center">
 				<text font="NotoSans 18" color="#ffffff" margin="4px" padding="12px">
-					See how it works by enabling debug mode with CTRL-D or by toggling
+					Check under the hood by enabling debug mode with CTRL-D or by toggling
 				</text>
 				<button onClick="Debug" color="#ffffff" margin="12px" padding="12px" btn="button.png 6">Debug Mode</button>
 			</row>

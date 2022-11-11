@@ -10,11 +10,11 @@ type Demo struct {
 	page2       *Page2
 }
 
-func (d *Demo) Prev() {
+func (d *Demo) Prev(_ *bento.Event) {
 	d.CurrentPage = 0
 }
 
-func (d *Demo) Next() {
+func (d *Demo) Next(_ *bento.Event) {
 	d.CurrentPage = 1
 }
 
@@ -27,13 +27,13 @@ func (d *Demo) Page1() bento.Component {
 
 func (d *Demo) Page2() bento.Component {
 	if d.page2 == nil {
-		d.page2 = &Page2{Title: "Loomings", Content: paragraphs[0], Paragraphs: paragraphs}
+		d.page2 = &Page2{}
 	}
 	return d.page2
 }
 
 func (d *Demo) UI() string {
-	return `<col grow="1" border="frame.png 10">
+	return `<col grow="1">
 		{{ if eq .CurrentPage 0 }}
 			<Page1 />
 		{{ end }}

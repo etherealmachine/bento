@@ -13,7 +13,6 @@ const (
 	Click  = EventType("Click")
 	Change = EventType("Change")
 	Update = EventType("Update")
-	Draw   = EventType("Draw")
 )
 
 type Event struct {
@@ -23,23 +22,27 @@ type Event struct {
 }
 
 func (n *Box) fireEvent(e EventType) {
-	attr := n.attrs["on"+string(e)]
-	if attr == "" {
+	x, y := ebiten.CursorPosition()
+	n.call("on"+string(e), &Event{
+		X:    x - n.X,
+		Y:    y - n.Y,
+		Box:  n,
+		Type: e,
+	})
+}
+
+func (n *Box) call(attr string, args ...interface{}) {
+	fnName := n.attrs[attr]
+	if fnName == "" {
 		return
 	}
-	x, y := ebiten.CursorPosition()
-	m := reflect.ValueOf(n.Component).MethodByName(attr)
+	m := reflect.ValueOf(n.Component).MethodByName(fnName)
 	if !m.IsValid() {
-		log.Fatalf("%s can't find on%s handler named %q in component %s", n.Tag, e, attr, reflect.TypeOf(n.Component))
+		log.Fatalf("%s can't find %s handler named %q", reflect.TypeOf(n.Component), attr, fnName)
 	}
-	var args []reflect.Value
-	if m.Type().NumIn() == 1 {
-		args = []reflect.Value{reflect.ValueOf(&Event{
-			X:    x - n.X,
-			Y:    y - n.Y,
-			Box:  n,
-			Type: e,
-		})}
+	reflectArgs := make([]reflect.Value, len(args))
+	for i, arg := range args {
+		reflectArgs[i] = reflect.ValueOf(arg)
 	}
-	m.Call(args)
+	m.Call(reflectArgs)
 }

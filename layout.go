@@ -67,11 +67,19 @@ func (n *Box) size() {
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = bounds.Dy()
 	} else if n.Tag == "input" {
-		bounds := text.BoundString(n.style.Font, n.attrs["placeholder"])
+		txt := n.Content
+		if txt == "" {
+			txt = n.attrs["placeholder"]
+		}
+		bounds := text.BoundString(n.style.Font, n.Content)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "textarea" {
-		bounds := text.BoundParagraph(n.style.Font, n.attrs["value"], n.style.MaxWidth)
+		txt := n.Content
+		if txt == "" {
+			txt = n.attrs["placeholder"]
+		}
+		bounds := text.BoundParagraph(n.style.Font, n.Content, n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
 	} else if n.Tag != "canvas" && n.Tag != "row" && n.Tag != "col" {
@@ -125,7 +133,7 @@ func (n *Box) grow() {
 				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
 				c.fillWidth(c.OuterWidth + halloc)
 			} else {
-				c.fillWidth(n.OuterWidth)
+				c.fillWidth(n.ContentWidth)
 			}
 		}
 		if vg > 0 && vgrow > 0 {
@@ -133,7 +141,7 @@ func (n *Box) grow() {
 				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
 				c.fillHeight(c.OuterHeight + valloc)
 			} else {
-				c.fillHeight(n.OuterHeight)
+				c.fillHeight(n.ContentHeight)
 			}
 		}
 	}

@@ -307,6 +307,8 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	prevR := rune(-1)
 
 	var bounds fixed.Rectangle26_6
+	// TODO: Fix bug, don't split on spaces
+	// instead, consume runes from text, (optionally) only allowing line to change on a space
 	words := strings.Split(text, " ")
 	for _, w := range words {
 		var width fixed.Int26_6
@@ -413,6 +415,8 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		}
 	}
 
+	// TODO: Fix bug, don't split on spaces
+	// instead, consume runes from text, (optionally) only allowing line to change on a space
 	words := strings.Split(text, " ")
 	var i int
 	var line int

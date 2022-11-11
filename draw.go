@@ -83,11 +83,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 			}
 		}
 	case "canvas":
+		n.call("onDraw", img)
 	case "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.Tag)
 	}
-	n.fireEvent(Draw)
 
 	if n.Debug {
 		op := new(ebiten.DrawImageOptions)
