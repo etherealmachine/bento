@@ -18,7 +18,7 @@ func (n *Box) isSubcomponent() bool {
 	return unicode.IsUpper(r)
 }
 
-func (n *Box) buildSubcomponent() error {
+func (n *Box) buildSubcomponent(prev *Box) error {
 	m := reflect.ValueOf(n.Component).MethodByName(n.Tag)
 	if !m.IsValid() {
 		return fmt.Errorf("%s has no method named %s", reflect.TypeOf(n.Component), n.Tag)
@@ -29,12 +29,17 @@ func (n *Box) buildSubcomponent() error {
 		n.Tag = style.Extends
 		return nil
 	} else if sub, ok := res[0].Interface().(Component); ok {
-		subNode, err := Build(sub)
-		if err != nil {
+		subNode := &Box{
+			Component: sub,
+			Parent:    n.Parent,
+		}
+		if err := subNode.build(prev); err != nil {
 			return err
 		}
-		subNode.Parent = n.Parent
 		*n = *subNode
+		for _, child := range n.Children {
+			child.Parent = n
+		}
 		return nil
 	}
 	return fmt.Errorf("%s.%s must return either Style or Component", reflect.TypeOf(n.Component), n.Tag)
@@ -56,7 +61,7 @@ func (n *Box) build(prev *Box) error {
 		}
 	}
 	if n.isSubcomponent() {
-		if err := n.buildSubcomponent(); err != nil {
+		if err := n.buildSubcomponent(prev); err != nil {
 			return err
 		}
 	}
@@ -81,7 +86,6 @@ func (n *Box) build(prev *Box) error {
 		return nil
 	}
 	for i, child := range n.Children {
-		child.Parent = n
 		if child.Component == nil {
 			child.Component = n.Component
 		}

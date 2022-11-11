@@ -105,6 +105,9 @@ func (n *Box) Rebuild() error {
 		return err
 	}
 	*n = *new
+	for _, child := range n.Children {
+		child.Parent = n
+	}
 	n.size()
 	n.grow()
 	n.justify()
@@ -123,9 +126,6 @@ func (n *Box) ToggleDebug() {
 }
 
 func (n *Box) String() string {
-	if n.Parent != nil {
-		return n.Parent.String()
-	}
 	buf := new(bytes.Buffer)
 	n.visit(0, func(depth int, n *Box) error {
 		for i := 0; i < depth; i++ {
@@ -135,7 +135,9 @@ func (n *Box) String() string {
 		if n.Debug {
 			row = append(row, "Debug")
 		}
-		if n.Parent == nil || n.Component != n.Parent.Component {
+		if n.Component == nil {
+			row = append(row, "<nil>")
+		} else if n.Parent == nil || n.Component != n.Parent.Component {
 			row = append(row, fmt.Sprintf("<%s>", reflect.ValueOf(n.Component).Elem().Type().Name()))
 		}
 		if n.Content != "" {
