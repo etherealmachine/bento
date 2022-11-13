@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -48,7 +47,7 @@ var (
 	glyphAdvanceCache = map[font.Face]map[rune]fixed.Int26_6{}
 )
 
-func getGlyphBounds(face font.Face, r rune) fixed.Rectangle26_6 {
+func glyphBounds(face font.Face, r rune) fixed.Rectangle26_6 {
 	if _, ok := glyphBoundsCache[face]; !ok {
 		glyphBoundsCache[face] = map[rune]fixed.Rectangle26_6{}
 	}
@@ -80,7 +79,7 @@ func fixed26_6ToFloat64(x fixed.Int26_6) float64 {
 	return float64(x>>6) + float64(x&((1<<6)-1))/float64(1<<6)
 }
 
-func getGlyphImage(face font.Face, r rune) *ebiten.Image {
+func glyphImage(face font.Face, r rune) *ebiten.Image {
 	if _, ok := glyphImageCache[face]; !ok {
 		glyphImageCache[face] = map[rune]*glyphImageCacheEntry{}
 	}
@@ -90,7 +89,7 @@ func getGlyphImage(face font.Face, r rune) *ebiten.Image {
 		return e.image
 	}
 
-	b := getGlyphBounds(face, r)
+	b := glyphBounds(face, r)
 	w, h := (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
 	if w == 0 || h == 0 {
 		glyphImageCache[face][r] = &glyphImageCacheEntry{
@@ -130,12 +129,12 @@ func getGlyphImage(face font.Face, r rune) *ebiten.Image {
 }
 
 func drawGlyph(dst *ebiten.Image, face font.Face, r rune, dx, dy fixed.Int26_6, op *ebiten.DrawImageOptions) {
-	img := getGlyphImage(face, r)
+	img := glyphImage(face, r)
 	if img == nil {
 		return
 	}
 
-	b := getGlyphBounds(face, r)
+	b := glyphBounds(face, r)
 	op2 := &ebiten.DrawImageOptions{}
 	if op != nil {
 		*op2 = *op
@@ -174,7 +173,7 @@ func BoundString(face font.Face, text string) image.Rectangle {
 			fx += face.Kern(prevR, r)
 		}
 
-		b := getGlyphBounds(face, r)
+		b := glyphBounds(face, r)
 		if b.Max.X-b.Min.X == 0 {
 			b.Max.Y = 1
 			b.Max.X = glyphAdvance(face, r)
@@ -189,7 +188,7 @@ func BoundString(face font.Face, text string) image.Rectangle {
 		prevR = r
 	}
 
-	bounds = bounds.Union(getGlyphBounds(face, 'M'))
+	bounds = bounds.Union(glyphBounds(face, 'M'))
 
 	return image.Rect(
 		int(math.Floor(fixed26_6ToFloat64(bounds.Min.X))),
@@ -222,7 +221,7 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		return nil
 	}
 
-	mBounds := getGlyphBounds(face, 'M')
+	mBounds := glyphBounds(face, 'M')
 	b := BoundString(face, text)
 	w, h := float64(width), float64(height)
 	ox, oy := float64(b.Min.X), float64(mBounds.Min.Y.Round())
@@ -301,54 +300,41 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 	m := face.Metrics()
 	lineHeight := m.Height
 
-	sx := glyphAdvance(face, ' ')
-
 	fx, fy, mw := fixed.I(0), fixed.I(0), fixed.I(maxWidth)
 	prevR := rune(-1)
 
 	var bounds fixed.Rectangle26_6
-	// TODO: Fix bug, don't split on spaces
-	// instead, consume runes from text, (optionally) only allowing line to change on a space
-	words := strings.Split(text, " ")
-	for _, w := range words {
-		var width fixed.Int26_6
-		for _, r := range w {
-			width += glyphAdvance(face, r)
-		}
+	for _, r := range text {
+		width := glyphAdvance(face, r)
 
-		if mw > 0 && fx+width > mw {
+		if prevR >= 0 {
+			fx += face.Kern(prevR, r)
+		}
+		if r == ' ' && mw > 0 && fx+width > mw {
+			fx = 0
+			fy += lineHeight
+		}
+		if r == '\n' {
 			fx = 0
 			fy += lineHeight
 			prevR = rune(-1)
 		}
-		for _, r := range w {
-			if prevR >= 0 {
-				fx += face.Kern(prevR, r)
-			}
-			if r == '\n' {
-				fx = fixed.I(0)
-				fy += lineHeight
-				prevR = rune(-1)
-				continue
-			}
 
-			b := getGlyphBounds(face, r)
+		if r == ' ' {
+			if fx+width > bounds.Max.X {
+				bounds.Max.X = fx + width
+			}
+		} else {
+			b := glyphBounds(face, r)
 			b.Min.X += fx
 			b.Max.X += fx
 			b.Min.Y += fy
 			b.Max.Y += fy
 			bounds = bounds.Union(b)
-
-			fx += glyphAdvance(face, r)
-			prevR = r
 		}
-		sb := getGlyphBounds(face, ' ')
-		sb.Min.X += fx
-		sb.Max.X += fx
-		sb.Min.Y += fy
-		sb.Max.Y += fy
-		bounds = bounds.Union(sb)
-		fx += sx
+
+		fx += width
+		prevR = r
 	}
 
 	return image.Rect(
@@ -401,7 +387,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 	prevR := rune(-1)
 
 	lineHeight := face.Metrics().Height
-	mBounds := getGlyphBounds(face, 'M')
+	mBounds := glyphBounds(face, 'M')
 	op.GeoM.Translate(0, float64((mBounds.Max.Y - mBounds.Min.Y).Round()))
 
 	var cx fixed.Int26_6
@@ -415,56 +401,47 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		}
 	}
 
-	// TODO: Fix bug, don't split on spaces
-	// instead, consume runes from text, (optionally) only allowing line to change on a space
-	words := strings.Split(text, " ")
 	var i int
 	var line int
 	endLine := -1
-	for _, w := range words {
-		var width fixed.Int26_6
-		for _, r := range w {
-			width += glyphAdvance(face, r)
-		}
+	for _, r := range text {
+		width := glyphAdvance(face, r)
 
-		if mw > 0 && dx+width > mw {
+		if prevR >= 0 {
+			dx += face.Kern(prevR, r)
+		}
+		if r == ' ' && mw > 0 && dx+width > mw {
 			dx = 0
 			dy += lineHeight
 			prevR = rune(-1)
 			line++
 		}
-
-		for _, r := range w {
-			if prevR >= 0 {
-				dx += face.Kern(prevR, r)
-			}
-			if r == '\n' {
-				dx = 0
-				dy += lineHeight
-				prevR = rune(-1)
-				line++
-				continue
-			}
-
-			if line >= scroll {
-				oy := fixed.I(scroll).Mul(lineHeight)
-				if mh <= 0 || dy-oy+lineHeight <= mh {
-					drawGlyph(dst, face, r, dx, dy-oy, &op)
-					if cursor == i {
-						drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
-					}
-					endLine = line
-				}
-			}
-
-			dx += glyphAdvance(face, r)
-			i++
-
-			prevR = r
+		if r == '\n' {
+			dx = 0
+			dy += lineHeight
+			prevR = rune(-1)
+			line++
+			continue
 		}
 
+		if line >= scroll {
+			oy := fixed.I(scroll).Mul(lineHeight)
+			if scroll < 0 {
+				oy = 0
+			}
+			if mh <= 0 || dy-oy+lineHeight <= mh || scroll < 0 {
+				drawGlyph(dst, face, r, dx, dy-oy, &op)
+				if cursor == i {
+					drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
+				}
+				endLine = line
+			}
+		}
+
+		dx += glyphAdvance(face, r)
 		i++
-		dx += sx
+
+		prevR = r
 	}
 
 	if cursor >= len(text) {

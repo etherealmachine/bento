@@ -51,7 +51,7 @@ func main() {
 	ebiten.SetWindowSize(1280, 900)
 	ebiten.SetWindowResizable(true)
 	ebiten.SetWindowTitle("Bento Demo")
-	ui, err := bento.Build(&Demo{})
+	ui, err := bento.Build(NewDemo())
 	if err != nil {
 		log.Fatal(err)
 	}

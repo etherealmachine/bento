@@ -285,7 +285,7 @@ func parseFont(spec string) (string, int, font.Face, error) {
 }
 
 // parse spacing spec e.g. "24px", "12px 12px", "8px 24px 6px 12px"
-// unints can be px or em
+// units can be px or em
 func parseSpacing(spec string, font font.Face) (*Spacing, error) {
 	if spec == "" {
 		return &Spacing{0, 0, 0, 0}, nil

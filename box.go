@@ -161,6 +161,13 @@ func max(a, b int) int {
 	return b
 }
 
+func min(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func inside(r image.Rectangle, x, y int) bool {
 	return x >= r.Min.X && x <= r.Max.X && y >= r.Min.Y && y <= r.Max.Y
 }

@@ -8,6 +8,9 @@ import (
 	"encoding/xml"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
@@ -47,17 +50,8 @@ func (n *Box) buildSubcomponent(prev *Box) error {
 
 func (n *Box) build(prev *Box) error {
 	if n.Tag == "" {
-		tmpl, err := template.New("").Parse(n.Component.UI())
-		if err != nil {
+		if err := n.expandComponent(); err != nil {
 			return err
-		}
-		buf := new(bytes.Buffer)
-		if err := tmpl.Execute(buf, n.Component); err != nil {
-			return err
-		}
-		if err := xml.Unmarshal(buf.Bytes(), n); err != nil {
-			// TODO: Good error reporting if parsing the XML fails
-			return fmt.Errorf("error building %s: %s", reflect.ValueOf(n.Component).Elem().Type().Name(), err)
 		}
 	}
 	if n.isSubcomponent() {
@@ -96,6 +90,36 @@ func (n *Box) build(prev *Box) error {
 		if err := child.build(prevChild); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (n *Box) expandComponent() error {
+	tmpl, err := template.New("").Parse(n.Component.UI())
+	if err != nil {
+		return err
+	}
+	buf := new(bytes.Buffer)
+	if err := tmpl.Execute(buf, n.Component); err != nil {
+		return err
+	}
+	if err := xml.Unmarshal(buf.Bytes(), n); err != nil {
+		// TODO: Good error reporting if parsing the XML fails
+		re := regexp.MustCompile(`error on line (\d+)`)
+		matches := re.FindStringSubmatch(err.Error())
+		if len(matches) == 2 {
+			lineNo, _ := strconv.Atoi(matches[1])
+			lines := strings.Split(buf.String(), "\n")
+			ctx := new(bytes.Buffer)
+			for i, line := range lines {
+				if i >= lineNo-3 && i <= lineNo+3 {
+					ctx.WriteString(fmt.Sprintf("%d: %s", i+1, line))
+					ctx.WriteByte('\n')
+				}
+			}
+			return fmt.Errorf("error building %s: %s\n%s", reflect.ValueOf(n.Component).Elem().Type().Name(), err, ctx)
+		}
+		return fmt.Errorf("error building %s: %s", reflect.ValueOf(n.Component).Elem().Type().Name(), err)
 	}
 	return nil
 }

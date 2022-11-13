@@ -53,14 +53,22 @@ func (n *Box) Draw(img *ebiten.Image) {
 	case "button", "text":
 		text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
-		n.scrollable.position = text.DrawParagraph(
-			img, n.Content, n.style.Font, n.style.Color,
-			n.maxContentWidth(), n.maxContentHeight(),
-			-1, n.scrollable.line,
-			*op)
-		if n.style.Scrollbar != nil && n.scrollable.position >= 0 {
-			op.GeoM.Translate(float64(pl), -float64(pt))
-			n.drawScrollbar(img, op)
+		if n.style.Scrollbar != nil {
+			n.scrollable.position = text.DrawParagraph(
+				img, n.Content, n.style.Font, n.style.Color,
+				n.maxContentWidth(), n.maxContentHeight(),
+				-1, n.scrollable.line,
+				*op)
+			if n.scrollable.position >= 0 {
+				op.GeoM.Translate(float64(pl), -float64(pt))
+				n.drawScrollbar(img, op)
+			}
+		} else {
+			text.DrawParagraph(
+				img, n.Content, n.style.Font, n.style.Color,
+				n.maxContentWidth(), n.maxContentHeight(),
+				-1, -1,
+				*op)
 		}
 	case "img":
 		img.DrawImage(n.style.Image, op)
