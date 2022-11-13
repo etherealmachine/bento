@@ -58,7 +58,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 			n.maxContentWidth(), n.maxContentHeight(),
 			-1, n.scrollable.line,
 			*op)
-		if n.scrollable.position >= 0 {
+		if n.style.Scrollbar != nil && n.scrollable.position >= 0 {
 			op.GeoM.Translate(float64(pl), -float64(pt))
 			n.drawScrollbar(img, op)
 		}

@@ -114,3 +114,27 @@ func (n *Box) visit(depth int, f func(depth int, n *Box) error) error {
 	}
 	return nil
 }
+
+func (a *Box) diff(b *Box) error {
+	if a == nil && b != nil {
+		return fmt.Errorf("a is nil, b is present")
+	}
+	if a != nil && b == nil {
+		return fmt.Errorf("b is nil, a is present")
+	}
+	if a.Tag != b.Tag {
+		return fmt.Errorf("tag mismatch, %s != %s", a.Tag, b.Tag)
+	}
+	if a.Content != b.Content {
+		return fmt.Errorf("content mismatch, %q != %q", a.Content, b.Content)
+	}
+	if len(a.Children) != len(b.Children) {
+		return fmt.Errorf("different number of children, %d != %d", len(a.Children), len(b.Children))
+	}
+	for i, c := range a.Children {
+		if err := c.diff(b.Children[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}

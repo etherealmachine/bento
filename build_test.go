@@ -52,14 +52,14 @@ func TestBuild(t *testing.T) {
 	}
 	want := `col <BasicComponent>
 	row
-		text 5
+		text "5"
 	col
-		text a
-		text b
-		text c
+		text "a"
+		text "b"
+		text "c"
 	col
-		text bar: baz
-		text foo: bar
+		text "bar: baz"
+		text "foo: bar"
 `
 	got := box.String()
 	if got != want {
@@ -93,7 +93,7 @@ func TestRebuild(t *testing.T) {
 	}
 	want := `col <BasicComponent>
 	row
-		text 0
+		text "0"
 `
 	got := box.String()
 	if got != want {
@@ -105,7 +105,7 @@ func TestRebuild(t *testing.T) {
 		nodes++
 		for _, child := range n.Children {
 			if child.Parent != n {
-				t.Fatal("parent has kidnapped a child")
+				t.Fatal("child has incorrect parent")
 			}
 		}
 		return nil
@@ -120,9 +120,9 @@ func TestRebuild(t *testing.T) {
 	}
 	want = `col <BasicComponent>
 	row
-		text 1
+		text "1"
 	col
-		text One
+		text "One"
 `
 	got = box.String()
 	if got != want {
@@ -135,7 +135,7 @@ func TestRebuild(t *testing.T) {
 	}
 	want = `col <BasicComponent>
 	row
-		text 2
+		text "2"
 `
 	got = box.String()
 	if got != want {
@@ -183,8 +183,8 @@ func TestBuildSubcomponent(t *testing.T) {
 	}
 	want := `col <ComponentWithSub>
 	col <SubComponent>
-		text 2
-	text Hello World
+		text "2"
+	text "Hello World"
 `
 	got := box.String()
 	if got != want {
@@ -200,8 +200,8 @@ func TestRebuildSubcomponent(t *testing.T) {
 	}
 	want := `col <ComponentWithSub>
 	col <SubComponent>
-		text 2
-	text Hello World
+		text "2"
+	text "Hello World"
 `
 	got := box.String()
 	if got != want {
@@ -213,7 +213,7 @@ func TestRebuildSubcomponent(t *testing.T) {
 		t.Fatal(err)
 	}
 	want = `col <ComponentWithSub>
-	text Hello World
+	text "Hello World"
 `
 	got = box.String()
 	if got != want {
@@ -227,8 +227,8 @@ func TestRebuildSubcomponent(t *testing.T) {
 	}
 	want = `col <ComponentWithSub>
 	col <SubComponent>
-		text 3
-	text Hello World
+		text "3"
+	text "Hello World"
 `
 	got = box.String()
 	if got != want {

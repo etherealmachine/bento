@@ -54,10 +54,10 @@ func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			}
 			n.Children = append(n.Children, child)
 			child.Parent = n
+		case xml.CharData:
+			n.Content += strings.TrimSpace(string(next))
 		case xml.EndElement:
 			return nil
-		case xml.CharData:
-			n.Content = strings.TrimSpace(string(next))
 		case xml.ProcInst:
 			return fmt.Errorf("unsupported xml processing instruction (<?target inst?>)")
 		case xml.Directive:

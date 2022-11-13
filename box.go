@@ -142,9 +142,9 @@ func (n *Box) String() string {
 		}
 		if n.Content != "" {
 			if len(n.Content) > 20 {
-				row = append(row, strings.TrimSpace(n.Content[:20])+"...")
+				row = append(row, fmt.Sprintf("%q...", strings.TrimSpace(n.Content[:20])))
 			} else {
-				row = append(row, n.Content)
+				row = append(row, fmt.Sprintf("%q", n.Content))
 			}
 		}
 		buf.WriteString(strings.Join(row, " "))
