@@ -9,7 +9,7 @@ type Page3 struct {
 }
 
 func (p *Page3) TextChange(event *bento.Event) {
-	p.TextInput = event.Box.Content
+	p.TextInput = event.Value
 }
 
 func (p *Page3) UI() string {
@@ -35,9 +35,8 @@ func (p *Page3) UI() string {
 				input="input.png 6"
 				color="#ffffff"
 				margin="4px"
-				padding="16px">
-			{{ .TextInput }}
-		</input>
+				padding="16px"
+				value="{{ .TextInput }}" />
 		<textarea
 				minWidth="40em"
 				minHeight="8lh"
@@ -46,8 +45,7 @@ func (p *Page3) UI() string {
 				input="input.png 6"
 				color="#ffffff"
 				margin="4px"
-				padding="16px">
-			{{ .TextInput }}
-		</textarea>
+				padding="16px"
+				value="{{ .TextInput }}" />
 	</col>`
 }

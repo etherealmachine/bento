@@ -18,10 +18,10 @@ type Component interface {
 type State int
 
 const (
-	Idle     = State(0)
-	Hover    = State(1)
-	Active   = State(2)
-	Disabled = State(3)
+	idle     = State(0)
+	hover    = State(1)
+	active   = State(2)
+	disabled = State(3)
 )
 
 type Box struct {
@@ -31,7 +31,7 @@ type Box struct {
 	Debug      bool
 	Content    string
 	Component  Component
-	State      State
+	state      State
 	style      *Style
 	attrs      map[string]string
 	scrollable Scrollable
@@ -61,20 +61,20 @@ func (n *Box) Update() error {
 	if !n.style.display() || n.style.hidden() {
 		return nil
 	}
-	n.State = Idle
+	n.state = idle
 	if n.attrs["disabled"] == "true" {
-		n.State = Disabled
+		n.state = disabled
 	} else {
 		x, y := ebiten.CursorPosition()
 		if inside(n.innerRect(), x, y) {
 			if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-				n.State = Active
+				n.state = active
 				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-					n.fireEvent("Click")
+					n.fireEvent(Click, "")
 				}
 			} else {
-				n.State = Hover
-				n.fireEvent("Hover")
+				n.state = hover
+				n.fireEvent(Hover, "")
 			}
 		}
 	}
@@ -84,7 +84,7 @@ func (n *Box) Update() error {
 	if err := n.scrollable.Update(n); err != nil {
 		return err
 	}
-	n.fireEvent(Update)
+	n.fireEvent(Update, "")
 	for _, child := range n.Children {
 		if err := child.Update(); err != nil {
 			return err

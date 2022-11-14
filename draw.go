@@ -38,9 +38,9 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.Tag {
 	case "button":
-		n.style.Button[int(n.State)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Button[int(n.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
-		n.style.Input[int(n.State)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Input[int(n.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
@@ -73,7 +73,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
-		txt := n.Content
+		txt := n.attrs["value"]
 		if txt == "" {
 			txt = n.attrs["placeholder"]
 		}

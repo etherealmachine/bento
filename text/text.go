@@ -378,7 +378,6 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		return -1
 	}
 
-	sx := glyphAdvance(face, ' ')
 	mw, mh := fixed.I(maxWidth), fixed.I(maxHeight)
 
 	op.ColorM.Scale(float64(cr)/float64(ca), float64(cg)/float64(ca), float64(cb)/float64(ca), float64(ca)/0xffff)
@@ -445,7 +444,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 	}
 
 	if cursor >= len(text) {
-		drawGlyph(dst, face, '|', dx-sx-cx/2, dy, &op)
+		drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 	}
 
 	cleanCache(face)

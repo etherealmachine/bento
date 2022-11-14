@@ -26,15 +26,15 @@ func (s *Scrollable) Update(b *Box) error {
 		}
 		// TODO: the math here works out but it's confusing
 		r := rects[i].Add(image.Pt(b.X+ml+pl+pl, b.Y+mt+pt-pt))
-		s.state[i] = Idle
+		s.state[i] = idle
 		x, y := ebiten.CursorPosition()
 		if inside(r, x, y) {
-			s.state[i] = Hover
+			s.state[i] = hover
 			if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-				s.state[i] = Active
+				s.state[i] = active
 			}
 		}
-		if s.state[i] == Active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		if s.state[i] == active && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if i == 0 {
 				s.line--
 				if s.line < 0 {

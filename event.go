@@ -11,23 +11,26 @@ type EventType string
 
 const (
 	Click  = EventType("Click")
+	Hover  = EventType("Hover")
 	Change = EventType("Change")
 	Update = EventType("Update")
 )
 
 type Event struct {
-	X, Y int
-	Box  *Box
-	Type EventType
+	X, Y  int
+	Box   *Box
+	Type  EventType
+	Value string
 }
 
-func (n *Box) fireEvent(e EventType) {
+func (n *Box) fireEvent(e EventType, value string) {
 	x, y := ebiten.CursorPosition()
 	n.call("on"+string(e), &Event{
-		X:    x - n.X,
-		Y:    y - n.Y,
-		Box:  n,
-		Type: e,
+		X:     x - n.X,
+		Y:     y - n.Y,
+		Box:   n,
+		Type:  e,
+		Value: value,
 	})
 }
 
