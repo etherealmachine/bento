@@ -36,12 +36,14 @@ type Box struct {
 	attrs      map[string]string
 	scrollable Scrollable
 	editable   *Editable
+	dirty      bool
 	layout
 }
 
 func Build(c Component) (*Box, error) {
 	root := &Box{
 		Component: c,
+		dirty:     true,
 	}
 	if err := root.build(nil); err != nil {
 		return nil, err
@@ -92,7 +94,9 @@ func (n *Box) Update() error {
 	}
 	if n.Parent == nil {
 		keys = keys[:0]
-		return n.Rebuild()
+		if n.dirty {
+			return n.Rebuild()
+		}
 	}
 	return nil
 }
@@ -111,6 +115,7 @@ func (n *Box) Rebuild() error {
 	n.size()
 	n.grow()
 	n.justify()
+	n.dirty = false
 	return nil
 }
 
@@ -152,6 +157,13 @@ func (n *Box) String() string {
 		return nil
 	})
 	return buf.String()
+}
+
+func (n *Box) root() *Box {
+	if n.Parent == nil {
+		return n
+	}
+	return n.Parent.root()
 }
 
 func max(a, b int) int {

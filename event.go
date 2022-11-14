@@ -48,4 +48,5 @@ func (n *Box) call(attr string, args ...interface{}) {
 		reflectArgs[i] = reflect.ValueOf(arg)
 	}
 	m.Call(reflectArgs)
+	n.root().dirty = true
 }
