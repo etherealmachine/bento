@@ -73,6 +73,9 @@ func (n *Box) Update() error {
 				n.state = active
 				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 					n.fireEvent(Click, "")
+				} else {
+					n.state = hover
+					n.fireEvent(Hover, "")
 				}
 			} else {
 				n.state = hover
