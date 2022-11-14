@@ -51,12 +51,15 @@ func (n *Box) call(attr string, args ...interface{}) {
 		}
 	}
 	out := m.Call(reflectArgs)
+	root := n.root()
 	if len(out) > 0 {
 		v := out[0]
 		if out[0].Type().Kind() == reflect.Bool {
-			n.root().dirty = v.Bool()
+			if v.Bool() {
+				root.dirty = true
+			}
 			return
 		}
 	}
-	n.root().dirty = true
+	root.dirty = true
 }
