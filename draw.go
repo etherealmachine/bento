@@ -38,9 +38,13 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.Tag {
 	case "button":
-		n.style.Button[int(n.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.style.Button[n.state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
-		n.style.Input[int(n.state)].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		state := n.state
+		if n.editable.focus {
+			state = active
+		}
+		n.style.Input[state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
@@ -142,7 +146,7 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
 	for i, r := range n.scrollRects(n.scrollable.position) {
-		btn := n.style.Scrollbar[int(n.scrollable.state[i])][i]
+		btn := n.style.Scrollbar[n.scrollable.state[i]][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
 }
