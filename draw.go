@@ -101,7 +101,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(n.X), float64(n.Y))
 		// Annotate
-		font := text.Font("mono", 18)
+		font := text.Font("RobotoMono", 18)
 		txt := fmt.Sprintf("%s %dx%d", n.Tag, n.OuterWidth, n.OuterHeight)
 		bounds := text.BoundString(font, txt)
 		drawBox(img, bounds.Dx()+8, bounds.Dy()+4, color.White, false, op)
@@ -117,10 +117,14 @@ func (n *Box) Draw(img *ebiten.Image) {
 	if n.Debug && n.Parent == nil {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(img.Bounds().Dx()-48), 24)
+		txt := fmt.Sprintf("%.0f", ebiten.CurrentFPS())
+		font := text.Font("RobotoMono", 24)
+		bounds := text.BoundString(font, txt)
+		drawBox(img, bounds.Dx(), bounds.Dy(), color.White, false, op)
 		text.DrawString(
 			img,
 			fmt.Sprintf("%.0f", ebiten.CurrentFPS()),
-			text.Font("mono", 24), color.White, 0, 0, text.Start, text.Start, -1, *op)
+			font, color.Black, 0, 0, text.Start, text.Start, -1, *op)
 	}
 }
 
