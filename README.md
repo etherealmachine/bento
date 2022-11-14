@@ -22,3 +22,19 @@ The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for t
 ![Screenshot at 2022-02-26 18-12-37](https://user-images.githubusercontent.com/460276/155865525-4de1fb69-803d-469a-bd55-c31ba5c38512.png)
 
 ![Screenshot at 2022-02-26 18-13-32](https://user-images.githubusercontent.com/460276/155865527-233abef0-ab24-4b46-a56b-bc2ea80a83cf.png)
+
+## Events
+```
+type Event struct {
+	X, Y  int       # For Click and Hover events
+	Box   *Box
+	Type  EventType # Click, Hover, Change, Update
+	Value string    # For Change events
+}
+```
+
+**onClick**
+**onHover**
+**onChange**
+**onUpdate**
+**onDraw**

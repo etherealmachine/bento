@@ -43,10 +43,20 @@ func (n *Box) call(attr string, args ...interface{}) {
 	if !m.IsValid() {
 		log.Fatalf("%s can't find %s handler named %q", reflect.TypeOf(n.Component), attr, fnName)
 	}
-	reflectArgs := make([]reflect.Value, len(args))
+	t := m.Type()
+	var reflectArgs []reflect.Value
 	for i, arg := range args {
-		reflectArgs[i] = reflect.ValueOf(arg)
+		if i < t.NumIn() {
+			reflectArgs = append(reflectArgs, reflect.ValueOf(arg))
+		}
 	}
-	m.Call(reflectArgs)
+	out := m.Call(reflectArgs)
+	if len(out) > 0 {
+		v := out[0]
+		if out[0].Type().Kind() == reflect.Bool {
+			n.root().dirty = v.Bool()
+			return
+		}
+	}
 	n.root().dirty = true
 }

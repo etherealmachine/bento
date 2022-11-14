@@ -7,7 +7,7 @@ type Page1 struct {
 	Paragraphs []string
 }
 
-func (p *Page1) Click(event *bento.Event) {
+func (p *Page1) Click() {
 	p.Clicks++
 }
 
