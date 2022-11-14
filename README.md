@@ -33,8 +33,14 @@ type Event struct {
 }
 ```
 
-**onClick**
-**onHover**
+**onClick** is fired on the first click event on a box (mousedown). Any element can register an `onClick` handler, not just buttons.
+The X and Y fields of the `Event` will have the mouse coordinates relative to the top left corner of the box.
+
+**onHover** is fired if the mouse is over the bounds of the box (including the margin and padding). `onHover` is NOT fired if the mouse was just clicked
+(`onClick` takes precedence).
+
 **onChange**
+
 **onUpdate**
+
 **onDraw**
