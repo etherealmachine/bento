@@ -71,7 +71,7 @@ func (n *Box) size() {
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
-		bounds := text.BoundString(n.style.Font, n.Content)
+		bounds := text.BoundString(n.style.Font, txt)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "textarea" {
@@ -79,7 +79,7 @@ func (n *Box) size() {
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
-		bounds := text.BoundParagraph(n.style.Font, n.Content, n.style.MaxWidth)
+		bounds := text.BoundParagraph(n.style.Font, txt, n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
 		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
 	} else if n.Tag != "canvas" && n.Tag != "row" && n.Tag != "col" {
