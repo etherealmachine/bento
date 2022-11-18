@@ -35,7 +35,7 @@ func (n *Box) fireEvent(e EventType, value string) {
 }
 
 func (n *Box) call(attr string, args ...interface{}) {
-	fnName := n.attrs[attr]
+	fnName := n.Attrs[attr]
 	if fnName == "" {
 		return
 	}

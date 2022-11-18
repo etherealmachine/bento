@@ -35,9 +35,9 @@ func (n *Box) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			return fmt.Errorf("unsupported tag %s, allowed tags: %v", n.Tag, allowedTags)
 		}
 	}
-	n.attrs = make(map[string]string)
+	n.Attrs = make(map[string]string)
 	for _, attr := range start.Attr {
-		n.attrs[attr.Name.Local] = attr.Value
+		n.Attrs[attr.Name.Local] = attr.Value
 	}
 	for {
 		next, err := d.Token()

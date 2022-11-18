@@ -69,7 +69,7 @@ func (n *Box) size() {
 	} else if n.Tag == "input" {
 		txt := n.Content
 		if txt == "" {
-			txt = n.attrs["placeholder"]
+			txt = n.Attrs["placeholder"]
 		}
 		bounds := text.BoundString(n.style.Font, n.Content)
 		n.ContentWidth = bounds.Dx()
@@ -77,7 +77,7 @@ func (n *Box) size() {
 	} else if n.Tag == "textarea" {
 		txt := n.Content
 		if txt == "" {
-			txt = n.attrs["placeholder"]
+			txt = n.Attrs["placeholder"]
 		}
 		bounds := text.BoundParagraph(n.style.Font, n.Content, n.style.MaxWidth)
 		n.ContentWidth = bounds.Dx()

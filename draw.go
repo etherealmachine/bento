@@ -77,9 +77,9 @@ func (n *Box) Draw(img *ebiten.Image) {
 	case "img":
 		img.DrawImage(n.style.Image, op)
 	case "input", "textarea":
-		txt := n.attrs["value"]
+		txt := n.Attrs["value"]
 		if txt == "" {
-			txt = n.attrs["placeholder"]
+			txt = n.Attrs["placeholder"]
 		}
 		if n.Tag == "input" {
 			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)

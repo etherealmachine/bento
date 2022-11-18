@@ -31,9 +31,9 @@ type Box struct {
 	Debug      bool
 	Content    string
 	Component  Component
+	Attrs      map[string]string
 	state      State
 	style      *Style
-	attrs      map[string]string
 	scrollable Scrollable
 	editable   *Editable
 	dirty      bool
@@ -64,7 +64,7 @@ func (n *Box) Update() error {
 		return nil
 	}
 	n.state = idle
-	if n.attrs["disabled"] == "true" {
+	if n.Attrs["disabled"] == "true" {
 		n.state = disabled
 	} else {
 		x, y := ebiten.CursorPosition()

@@ -14,7 +14,7 @@ type Scrollable struct {
 }
 
 func (s *Scrollable) Update(b *Box) error {
-	if b.style.Scrollbar == nil || b.attrs["disabled"] == "true" {
+	if b.style.Scrollbar == nil || b.Attrs["disabled"] == "true" {
 		return nil
 	}
 	mt, _, _, ml := b.style.margin()

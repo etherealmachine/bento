@@ -41,7 +41,7 @@ func (e *Editable) Update(b *Box) error {
 		} else if t-e.cursorTime >= 2000 {
 			e.cursorTime = t
 		}
-		v := b.attrs["value"]
+		v := b.Attrs["value"]
 		for _, k := range keys {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
@@ -67,7 +67,7 @@ func (e *Editable) Update(b *Box) error {
 				// TODO: ebiten.KeyUp, ebiten.KeyDown
 			}
 		}
-		if b.attrs["value"] != v {
+		if b.Attrs["value"] != v {
 			b.fireEvent(Change, v)
 		}
 	} else {

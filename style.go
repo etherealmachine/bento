@@ -81,7 +81,7 @@ func (s *Style) adopt(node *Box) {
 	if s.Attrs == nil {
 		s.Attrs = make(map[string]string)
 	}
-	for k, v := range node.attrs {
+	for k, v := range node.Attrs {
 		if _, exists := s.Attrs[k]; !exists {
 			s.Attrs[k] = v
 		}
@@ -139,11 +139,11 @@ func (s *Style) growth() (int, int) {
 }
 
 func (s *Style) display() bool {
-	return s.node.attrs["display"] != "false"
+	return s.node.Attrs["display"] != "false"
 }
 
 func (s *Style) hidden() bool {
-	return s.node.attrs["hidden"] == "true"
+	return s.node.Attrs["hidden"] == "true"
 }
 
 func (n *Box) styleSize() {
