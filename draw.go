@@ -55,11 +55,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.Tag {
 	case "button", "text":
-		text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
+		text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.style.Underline, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
 		if n.style.Scrollbar != nil {
 			n.scrollable.position = text.DrawParagraph(
-				img, n.Content, n.style.Font, n.style.Color,
+				img, n.Content, n.style.Font, n.style.Color, n.style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				-1, n.scrollable.line,
 				*op)
@@ -69,23 +69,28 @@ func (n *Box) Draw(img *ebiten.Image) {
 			}
 		} else {
 			text.DrawParagraph(
-				img, n.Content, n.style.Font, n.style.Color,
+				img, n.Content, n.style.Font, n.style.Color, n.style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				-1, -1,
 				*op)
 		}
 	case "img":
-		img.DrawImage(n.style.Image, op)
+		imgOp := new(ebiten.DrawImageOptions)
+		imgOp.GeoM.Scale(n.style.ScaleX, n.style.ScaleY)
+		imgOp.GeoM.Translate(float64(n.X), float64(n.Y))
+		imgOp.GeoM.Translate(float64(ml), float64(mt))
+		imgOp.GeoM.Translate(float64(pl), float64(pt))
+		img.DrawImage(n.style.Image, imgOp)
 	case "input", "textarea":
 		txt := n.Attrs["value"]
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
 		if n.Tag == "input" {
-			text.DrawString(img, txt, n.style.Font, n.style.Color, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
+			text.DrawString(img, txt, n.style.Font, n.style.Color, n.style.Underline, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
 		} else {
 			n.scrollable.position = text.DrawParagraph(
-				img, txt, n.style.Font, n.style.Color,
+				img, txt, n.style.Font, n.style.Color, n.style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				n.editable.Cursor(), n.scrollable.line,
 				*op)
@@ -110,7 +115,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		bounds := text.BoundString(font, txt)
 		drawBox(img, bounds.Dx()+8, bounds.Dy()+4, color.White, false, op)
 		op.GeoM.Translate(4, 4)
-		text.DrawString(img, txt, font, color.Black,
+		text.DrawString(img, txt, font, color.Black, false,
 			n.OuterWidth, n.OuterHeight, text.Start, text.Start, -1, *op)
 	}
 
@@ -128,7 +133,8 @@ func (n *Box) Draw(img *ebiten.Image) {
 		text.DrawString(
 			img,
 			fmt.Sprintf("%.0f", ebiten.CurrentFPS()),
-			font, color.Black, 0, 0, text.Start, text.Start, -1, *op)
+			font, color.Black, false,
+			0, 0, text.Start, text.Start, -1, *op)
 	}
 }
 

@@ -60,6 +60,7 @@ type Style struct {
 	FontName            string
 	FontSize            int
 	Font                font.Face
+	Underline           bool
 	Border              *NineSlice
 	Button              *[4]*NineSlice
 	Scrollbar           *[3][4]*NineSlice
@@ -74,6 +75,7 @@ type Style struct {
 	OffsetX, OffsetY    int
 	Hidden              bool
 	Display             bool
+	ScaleX, ScaleY      float64
 	node                *Box
 }
 
@@ -183,6 +185,9 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing font: %s", err)
 		}
 	}
+	if spec := s.Attrs["underline"]; spec == "true" {
+		s.Underline = true
+	}
 	if s.Margin == nil {
 		if s.Margin, err = parseSpacing(s.Attrs["margin"], s.Font); err != nil {
 			return fmt.Errorf("error parsing margin: %s", err)
@@ -249,6 +254,11 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing float: %s", err)
 		}
 	}
+	if spec := s.Attrs["scale"]; spec != "" {
+		if s.ScaleX, s.ScaleY, err = parseScale(spec); err != nil {
+			return fmt.Errorf("error parsing float: %s", err)
+		}
+	}
 	if s.Button == nil {
 		if s.Button, err = ParseButton(s.Attrs["btn"]); err != nil {
 			return fmt.Errorf("error parsing button: %s", err)
@@ -264,7 +274,6 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing input: %s", err)
 		}
 	}
-	// s.Textarea
 	return nil
 }
 
@@ -381,7 +390,24 @@ func parseOffset(spec string) (int, int, error) {
 	if err == nil && len(a) == 2 {
 		y, err = strconv.Atoi(a[1])
 	} else if len(a) > 2 {
-		return 0, 0, fmt.Errorf("too many parameters for grow, expected at most 2: %s", spec)
+		return 0, 0, fmt.Errorf("too many parameters for offset, expected at most 2: %s", spec)
+	}
+	return x, y, err
+}
+
+func parseScale(spec string) (float64, float64, error) {
+	if spec == "" {
+		return 1, 1, nil
+	}
+	a := strings.Split(spec, " ")
+	var x, y float64
+	var err error
+	x, err = strconv.ParseFloat(a[0], 32)
+	y = x
+	if err == nil && len(a) == 2 {
+		y, err = strconv.ParseFloat(a[1], 32)
+	} else if len(a) > 2 {
+		return 0, 0, fmt.Errorf("too many parameters for scale, expected at most 2: %s", spec)
 	}
 	return x, y, err
 }

@@ -64,8 +64,8 @@ func (n *Box) size() {
 		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
 	} else if n.Tag == "img" && n.style.Image != nil {
 		bounds := n.style.Image.Bounds()
-		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = bounds.Dy()
+		n.ContentWidth = int(float64(bounds.Dx()) * n.style.ScaleX)
+		n.ContentHeight = int(float64(bounds.Dy()) * n.style.ScaleY)
 	} else if n.Tag == "input" {
 		txt := n.Content
 		if txt == "" {

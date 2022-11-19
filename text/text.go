@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -140,7 +141,7 @@ func drawGlyph(dst *ebiten.Image, face font.Face, r rune, dx, dy fixed.Int26_6, 
 		*op2 = *op
 	}
 	op2.GeoM.Reset()
-	op2.GeoM.Translate(float64((dx+b.Min.X)>>6), float64((dy+b.Min.Y)>>6))
+	op2.GeoM.Translate(fixed26_6ToFloat64((dx + b.Min.X)), fixed26_6ToFloat64((dy + b.Min.Y)))
 	if op != nil {
 		op2.GeoM.Concat(op.GeoM)
 	}
@@ -204,18 +205,20 @@ func BoundString(face font.Face, text string) image.Rectangle {
 //
 // clr is the color for text rendering.
 //
-// width, height, ha, and va specify the alignment of the text inside a box of width and height
+// underline draws a line along the baseline.
 //
-// cursor will draw a | character at the given boundary between two characters, -1 means no cursor
+// width, height, ha, and va specify the alignment of the text inside a box of width and height.
 //
-// op sets the transform used to control placement of the text
+// cursor will draw a | character at the given boundary between two characters, -1 means no cursor.
+//
+// op sets the transform used to control placement of the text.
 //
 // It is OK to call Draw with a same text and a same face at every frame in terms of performance.
 // Glyphs used for rendering are cached in least-recently-used way.
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, width, height int, ha Alignment, va Alignment, cursor int, op ebiten.DrawImageOptions) error {
+func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color, underline bool, width, height int, ha Alignment, va Alignment, cursor int, op ebiten.DrawImageOptions) error {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return nil
@@ -283,7 +286,12 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 			drawGlyph(dst, face, '|', dx-cx/2, dy, &op)
 		}
 
-		dx += glyphAdvance(face, r)
+		adv := glyphAdvance(face, r)
+		if underline {
+			x, y := op.GeoM.Apply(fixed26_6ToFloat64(dx), fixed26_6ToFloat64(dy))
+			ebitenutil.DrawLine(dst, x, y+1, x+fixed26_6ToFloat64(adv), y+1, clr)
+		}
+		dx += adv
 
 		prevR = r
 	}
@@ -356,6 +364,8 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 //
 // clr is the color for text rendering.
 //
+// underline draws a line along the baseline.
+//
 // maxWidth and maxHeight (both in pixels), when positive, turn on word wrapping and line limiting
 //
 // cursor will draw a | character at the given boundary between two characters, when negative no cursor will be drawn
@@ -372,7 +382,7 @@ func BoundParagraph(face font.Face, text string, maxWidth int) image.Rectangle {
 //
 // Be careful that the passed font face is held by this package and is never released.
 // This is a known issue (#498).
-func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, maxWidth, maxHeight, cursor, scroll int, op ebiten.DrawImageOptions) float64 {
+func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Color, underline bool, maxWidth, maxHeight, cursor, scroll int, op ebiten.DrawImageOptions) float64 {
 	cr, cg, cb, ca := clr.RGBA()
 	if ca == 0 {
 		return -1
@@ -437,7 +447,12 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 			}
 		}
 
-		dx += glyphAdvance(face, r)
+		adv := glyphAdvance(face, r)
+		if underline {
+			x, y := op.GeoM.Apply(fixed26_6ToFloat64(dx), fixed26_6ToFloat64(dy))
+			ebitenutil.DrawLine(dst, x, y+1, x+fixed26_6ToFloat64(adv), y+1, clr)
+		}
+		dx += adv
 		i++
 
 		prevR = r
