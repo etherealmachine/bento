@@ -289,7 +289,7 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 		adv := glyphAdvance(face, r)
 		if underline {
 			x, y := op.GeoM.Apply(fixed26_6ToFloat64(dx), fixed26_6ToFloat64(dy))
-			ebitenutil.DrawLine(dst, x, y+1, x+fixed26_6ToFloat64(adv), y+1, clr)
+			ebitenutil.DrawLine(dst, x, y+2, x+fixed26_6ToFloat64(adv), y+2, clr)
 		}
 		dx += adv
 
@@ -450,7 +450,7 @@ func DrawParagraph(dst *ebiten.Image, text string, face font.Face, clr color.Col
 		adv := glyphAdvance(face, r)
 		if underline {
 			x, y := op.GeoM.Apply(fixed26_6ToFloat64(dx), fixed26_6ToFloat64(dy))
-			ebitenutil.DrawLine(dst, x, y+1, x+fixed26_6ToFloat64(adv), y+1, clr)
+			ebitenutil.DrawLine(dst, x, y+2, x+fixed26_6ToFloat64(adv), y+2, clr)
 		}
 		dx += adv
 		i++

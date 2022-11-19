@@ -17,7 +17,7 @@ func (p *Page1) Debug(event *bento.Event) {
 
 func (p *Page1) UI() string {
 	return `<col grow="1" justify="start" margin="24px">
-		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">
+		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px" underline="true">
 			What is Bento?
 		</text>
 		<col margin="0 0 0 16px">
