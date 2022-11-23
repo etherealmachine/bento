@@ -15,8 +15,8 @@ func (n *Box) Draw(img *ebiten.Image) {
 	if !n.style.Display || n.style.Hidden {
 		return
 	}
-	mt, _, _, ml := n.style.margin()
-	pt, _, _, pl := n.style.padding()
+	mt, ml := n.style.Margin.Top, n.style.Margin.Left
+	pt, pl := n.style.Padding.Top, n.style.Padding.Left
 
 	op := new(ebiten.DrawImageOptions)
 	op.GeoM.Translate(float64(n.X), float64(n.Y))
@@ -32,7 +32,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
 
-	if n.style != nil && n.style.Border != nil {
+	if n.style.Border != nil {
 		n.style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 

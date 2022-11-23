@@ -70,7 +70,7 @@ type Style struct {
 	MaxWidth, MaxHeight int
 	HJust, VJust        Justification
 	HGrow, VGrow        int
-	Margin, Padding     *Spacing
+	Margin, Padding     Spacing
 	Color               color.Color
 	OffsetX, OffsetY    int
 	Float               bool
@@ -92,59 +92,25 @@ func (s *Style) adopt(node *Box) {
 	s.node = node
 }
 
-func (s *Style) margin() (int, int, int, int) {
-	if s != nil {
-		m := s.Margin
-		if m != nil {
-			return m.Top, m.Right, m.Bottom, m.Left
-		}
-	}
-	return 0, 0, 0, 0
-}
-
-func (s *Style) padding() (int, int, int, int) {
-	if s != nil {
-		p := s.Padding
-		if p != nil {
-			return p.Top, p.Right, p.Bottom, p.Left
-		}
-	}
-	return 0, 0, 0, 0
-}
-
 func (s *Style) justification() (Justification, Justification) {
 	hj, vj := Start, Start
-	if s != nil {
-		if s.HJust != "" {
-			hj = s.HJust
-		}
-		if s.VJust != "" {
-			vj = s.VJust
-		}
+	if s.HJust != "" {
+		hj = s.HJust
+	}
+	if s.VJust != "" {
+		vj = s.VJust
 	}
 	return hj, vj
 }
 
 func (s *Style) scrollBarWidth() int {
-	if s != nil && s.node.ContentHeight > s.MaxHeight && s.Scrollbar != nil {
+	if s.node.ContentHeight > s.MaxHeight && s.Scrollbar != nil {
 		return s.Scrollbar[0][0].Width()
 	}
 	return 0
 }
 
-func (s *Style) growth() (int, int) {
-	hg, vg := 0, 0
-	if s != nil {
-		hg = s.HGrow
-		vg = s.VGrow
-	}
-	return hg, vg
-}
-
 func (n *Box) styleSize() {
-	if n.style == nil {
-		return
-	}
 	n.ContentWidth += n.style.scrollBarWidth()
 	if n.style.MinWidth > 0 {
 		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
@@ -181,16 +147,16 @@ func (s *Style) parseAttributes() error {
 	if spec := s.Attrs["underline"]; spec == "true" {
 		s.Underline = true
 	}
-	if s.Margin == nil {
-		if s.Margin, err = parseSpacing(s.Attrs["margin"], s.Font); err != nil {
-			return fmt.Errorf("error parsing margin: %s", err)
-		}
+	margin, err := parseSpacing(s.Attrs["margin"], s.Font)
+	if err != nil {
+		return fmt.Errorf("error parsing margin: %s", err)
 	}
-	if s.Padding == nil {
-		if s.Padding, err = parseSpacing(s.Attrs["padding"], s.Font); err != nil {
-			return fmt.Errorf("error parsing padding: %s", err)
-		}
+	s.Margin = *margin
+	padding, err := parseSpacing(s.Attrs["padding"], s.Font)
+	if err != nil {
+		return fmt.Errorf("error parsing padding: %s", err)
 	}
+	s.Padding = *padding
 	if s.Image == nil {
 		if s.Image, err = loadImage(s.Attrs["src"]); err != nil {
 			return fmt.Errorf("error parsing image src: %s", err)

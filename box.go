@@ -33,7 +33,7 @@ type Box struct {
 	Component  Component
 	Attrs      map[string]string
 	state      State
-	style      *Style
+	style      Style
 	scrollable Scrollable
 	editable   *Editable
 	dirty      bool

@@ -98,7 +98,7 @@ func TestJustificationExtraSpace(t *testing.T) {
 			})
 		}
 		n.Tag = test.tag
-		n.style = &Style{
+		n.style = Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}
@@ -172,7 +172,7 @@ func TestJustificationNoExtraSpace(t *testing.T) {
 			})
 		}
 		n.Tag = test.tag
-		n.style = &Style{
+		n.style = Style{
 			HJust: test.hjust,
 			VJust: test.vjust,
 		}

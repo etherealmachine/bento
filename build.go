@@ -28,7 +28,7 @@ func (n *Box) buildSubcomponent(prev *Box) error {
 	}
 	res := m.Call(nil)
 	if style, ok := res[0].Interface().(*Style); ok {
-		n.style = style
+		n.style = *style
 		n.Tag = style.Extends
 		return nil
 	} else if sub, ok := res[0].Interface().(Component); ok {
@@ -58,9 +58,6 @@ func (n *Box) build(prev *Box) error {
 		if err := n.buildSubcomponent(prev); err != nil {
 			return err
 		}
-	}
-	if n.style == nil {
-		n.style = new(Style)
 	}
 	n.style.adopt(n)
 	if err := n.style.parseAttributes(); err != nil {

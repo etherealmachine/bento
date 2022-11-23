@@ -32,7 +32,7 @@ func (n *Box) outerRect() image.Rectangle {
 }
 
 func (n *Box) innerRect() image.Rectangle {
-	mt, _, _, ml := n.style.margin()
+	mt, ml := n.style.Margin.Top, n.style.Margin.Left
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
@@ -105,18 +105,16 @@ func (n *Box) size() {
 		}
 	}
 	n.styleSize()
-	mt, mr, mb, ml := n.style.margin()
-	pt, pr, pb, pl := n.style.padding()
-	n.InnerWidth = n.ContentWidth + pl + pr
-	n.InnerHeight = n.ContentHeight + pt + pb
-	n.OuterWidth = n.InnerWidth + ml + mr
-	n.OuterHeight = n.InnerHeight + mt + mb
+	n.InnerWidth = n.ContentWidth + n.style.Padding.Left + n.style.Padding.Right
+	n.InnerHeight = n.ContentHeight + n.style.Padding.Top + n.style.Padding.Bottom
+	n.OuterWidth = n.InnerWidth + n.style.Margin.Left + n.style.Margin.Right
+	n.OuterHeight = n.InnerHeight + n.style.Margin.Top + n.style.Margin.Bottom
 }
 
 // grow children of the box to fit the space available, using their "grow" attribute
 func (n *Box) grow() {
 	// special case - the root of the tree can grow in either direction to fit the full window
-	if n.Parent == nil && n.style != nil {
+	if n.Parent == nil {
 		w, h := ebiten.WindowSize()
 		if n.style.HGrow > 0 {
 			n.fillWidth(w)
@@ -131,9 +129,8 @@ func (n *Box) grow() {
 		if !c.style.Display {
 			continue
 		}
-		hg, vg := c.style.growth()
-		hgrow += hg
-		vgrow += vg
+		hgrow += c.style.HGrow
+		vgrow += c.style.VGrow
 	}
 	// allocate leftover space to each child according to their relative growth terms
 	hspace, vspace := n.space()
@@ -141,18 +138,17 @@ func (n *Box) grow() {
 		if !c.style.Display {
 			continue
 		}
-		hg, vg := c.style.growth()
-		if hg > 0 {
+		if c.style.HGrow > 0 {
 			if n.Tag == "row" {
-				halloc := int(math.Floor(float64(hg) / float64(hgrow) * float64(hspace)))
+				halloc := int(math.Floor(float64(c.style.HGrow) / float64(hgrow) * float64(hspace)))
 				c.fillWidth(c.OuterWidth + halloc)
 			} else {
 				c.fillWidth(n.ContentWidth)
 			}
 		}
-		if vg > 0 && vgrow > 0 {
+		if c.style.VGrow > 0 && vgrow > 0 {
 			if n.Tag == "col" {
-				valloc := int(math.Floor(float64(vg) / float64(vgrow) * float64(vspace)))
+				valloc := int(math.Floor(float64(c.style.VGrow) / float64(vgrow) * float64(vspace)))
 				c.fillHeight(c.OuterHeight + valloc)
 			} else {
 				c.fillHeight(n.ContentHeight)
@@ -172,8 +168,8 @@ func (n *Box) fillWidth(w int) {
 	if w < n.OuterWidth {
 		return
 	}
-	_, mr, _, ml := n.style.margin()
-	_, pr, _, pl := n.style.padding()
+	mr, ml := n.style.Margin.Right, n.style.Margin.Left
+	pr, pl := n.style.Padding.Right, n.style.Padding.Left
 	n.OuterWidth = w
 	n.InnerWidth = n.OuterWidth - ml - mr
 	n.ContentWidth = n.InnerWidth - pr - pl
@@ -183,8 +179,8 @@ func (n *Box) fillHeight(h int) {
 	if h < n.OuterHeight {
 		return
 	}
-	mt, _, mb, _ := n.style.margin()
-	pt, _, pb, _ := n.style.padding()
+	mt, mb := n.style.Margin.Top, n.style.Margin.Bottom
+	pt, pb := n.style.Padding.Top, n.style.Padding.Bottom
 	n.OuterHeight = h
 	n.InnerHeight = n.OuterHeight - mt - mb
 	n.ContentHeight = n.InnerHeight - pt - pb
@@ -226,9 +222,7 @@ func (n *Box) justify() {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 		var ox, oy int
-		if c.style != nil {
-			ox, oy = c.style.OffsetX, c.style.OffsetY
-		}
+		ox, oy = c.style.OffsetX, c.style.OffsetY
 		if ox < 0 {
 			ox = n.InnerWidth - c.OuterWidth + ox + 1
 		}

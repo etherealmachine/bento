@@ -17,8 +17,8 @@ func (s *Scrollable) Update(b *Box) error {
 	if b.style.Scrollbar == nil || b.Attrs["disabled"] == "true" {
 		return nil
 	}
-	mt, _, _, ml := b.style.margin()
-	pt, _, _, pl := b.style.padding()
+	mt, ml := b.style.Margin.Top, b.style.Margin.Left
+	pt, pl := b.style.Padding.Top, b.style.Padding.Left
 	rects := b.scrollRects(s.position)
 	for i := 0; i < 4; i++ {
 		if i == 2 {
