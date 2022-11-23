@@ -12,7 +12,7 @@ import (
 )
 
 func (n *Box) Draw(img *ebiten.Image) {
-	if n.style.hidden() || !n.style.display() {
+	if !n.style.Display || n.style.Hidden {
 		return
 	}
 	mt, _, _, ml := n.style.margin()

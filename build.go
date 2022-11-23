@@ -76,7 +76,7 @@ func (n *Box) build(prev *Box) error {
 			n.editable = &Editable{}
 		}
 	}
-	if !n.style.display() || n.style.hidden() {
+	if !n.style.Display || n.style.Hidden {
 		return nil
 	}
 	for i, child := range n.Children {

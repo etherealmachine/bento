@@ -73,6 +73,7 @@ type Style struct {
 	Margin, Padding     *Spacing
 	Color               color.Color
 	OffsetX, OffsetY    int
+	Float               bool
 	Hidden              bool
 	Display             bool
 	ScaleX, ScaleY      float64
@@ -138,14 +139,6 @@ func (s *Style) growth() (int, int) {
 		vg = s.VGrow
 	}
 	return hg, vg
-}
-
-func (s *Style) display() bool {
-	return s.node.Attrs["display"] != "false"
-}
-
-func (s *Style) hidden() bool {
-	return s.node.Attrs["hidden"] == "true"
 }
 
 func (n *Box) styleSize() {
@@ -251,7 +244,7 @@ func (s *Style) parseAttributes() error {
 	}
 	if spec := s.Attrs["offset"]; spec != "" {
 		if s.OffsetX, s.OffsetY, err = parseOffset(spec); err != nil {
-			return fmt.Errorf("error parsing float: %s", err)
+			return fmt.Errorf("error parsing offset: %s", err)
 		}
 	}
 	if spec := s.Attrs["scale"]; spec != "" {
@@ -274,6 +267,9 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing input: %s", err)
 		}
 	}
+	s.Float = s.node.Attrs["float"] == "true"
+	s.Hidden = s.node.Attrs["hidden"] == "true"
+	s.Display = s.node.Attrs["display"] != "false"
 	return nil
 }
 

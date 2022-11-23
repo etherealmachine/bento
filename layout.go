@@ -47,7 +47,7 @@ func (n *Box) maxContentHeight() int {
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.style.display() {
+	if !n.style.Display {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
@@ -115,7 +115,7 @@ func (n *Box) grow() {
 	}
 	hgrow, vgrow := 0, 0
 	for _, c := range n.Children {
-		if !c.style.display() {
+		if !c.style.Display {
 			continue
 		}
 		hg, vg := c.style.growth()
@@ -124,7 +124,7 @@ func (n *Box) grow() {
 	}
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
-		if !c.style.display() {
+		if !c.style.Display {
 			continue
 		}
 		hg, vg := c.style.growth()
@@ -146,7 +146,7 @@ func (n *Box) grow() {
 		}
 	}
 	for _, c := range n.Children {
-		if !c.style.display() {
+		if !c.style.Display {
 			continue
 		}
 		c.grow()
