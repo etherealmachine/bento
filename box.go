@@ -115,9 +115,7 @@ func (n *Box) Rebuild() error {
 	for _, child := range n.Children {
 		child.Parent = n
 	}
-	n.size()
-	n.grow()
-	n.justify()
+	n.relayout()
 	n.dirty = false
 	return nil
 }

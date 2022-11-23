@@ -21,6 +21,12 @@ func (n *Box) Bounds() image.Rectangle {
 	return n.outerRect()
 }
 
+func (n *Box) relayout() {
+	n.size()
+	n.grow()
+	n.justify()
+}
+
 func (n *Box) outerRect() image.Rectangle {
 	return image.Rect(n.X, n.Y, n.X+n.OuterWidth, n.Y+n.OuterHeight)
 }
@@ -44,6 +50,8 @@ func (n *Box) maxContentHeight() int {
 	return n.ContentHeight
 }
 
+// determine the minimum size of the box
+// the box must expand to fit all of its children
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
@@ -105,14 +113,19 @@ func (n *Box) size() {
 	n.OuterHeight = n.InnerHeight + mt + mb
 }
 
+// grow children of the box to fit the space available, using their "grow" attribute
 func (n *Box) grow() {
-	w, h := ebiten.WindowSize()
-	if n.style != nil && n.style.HGrow > 0 && n.Parent == nil {
-		n.fillWidth(w)
+	// special case - the root of the tree can grow in either direction to fit the full window
+	if n.Parent == nil && n.style != nil {
+		w, h := ebiten.WindowSize()
+		if n.style.HGrow > 0 {
+			n.fillWidth(w)
+		}
+		if n.style.VGrow > 0 {
+			n.fillHeight(h)
+		}
 	}
-	if n.style != nil && n.style.VGrow > 0 && n.Parent == nil {
-		n.fillHeight(h)
-	}
+	// sum the growth attributes to determine the relative growth of each child later
 	hgrow, vgrow := 0, 0
 	for _, c := range n.Children {
 		if !c.style.Display {
@@ -122,6 +135,7 @@ func (n *Box) grow() {
 		hgrow += hg
 		vgrow += vg
 	}
+	// allocate leftover space to each child according to their relative growth terms
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
 		if !c.style.Display {
@@ -145,6 +159,7 @@ func (n *Box) grow() {
 			}
 		}
 	}
+	// finally, allow the children to grow their own children using this newly allocated space
 	for _, c := range n.Children {
 		if !c.style.Display {
 			continue
@@ -175,12 +190,16 @@ func (n *Box) fillHeight(h int) {
 	n.ContentHeight = n.InnerHeight - pt - pb
 }
 
+// returns the horizontal and vertical space leftover in the box
 func (n *Box) space() (int, int) {
 	maxChildWidth := 0
 	maxChildHeight := 0
 	totalChildWidths := 0
 	totalChildHeights := 0
 	for _, c := range n.Children {
+		if !c.style.Display {
+			continue
+		}
 		maxChildWidth = max(maxChildWidth, c.OuterWidth)
 		maxChildHeight = max(maxChildHeight, c.OuterHeight)
 		totalChildWidths += c.OuterWidth
@@ -198,6 +217,7 @@ func (n *Box) space() (int, int) {
 	return hspace, vspace
 }
 
+// place the children in the box according to their justification
 func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
