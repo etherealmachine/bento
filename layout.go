@@ -217,7 +217,6 @@ func (n *Box) space() (int, int) {
 func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
-	hj, vj := n.style.justification()
 	for _, c := range n.Children {
 		c.X = r.Min.X
 		c.Y = r.Min.Y
@@ -244,9 +243,9 @@ func (n *Box) justify() {
 	}
 	var offsets [][2]int
 	if n.Tag == "row" {
-		offsets = distribute(hspace, n.InnerHeight, hj, vj, extents)
+		offsets = distribute(hspace, n.InnerHeight, n.style.HJust, n.style.VJust, extents)
 	} else {
-		offsets = distribute(vspace, n.InnerWidth, vj, hj, extents)
+		offsets = distribute(vspace, n.InnerWidth, n.style.VJust, n.style.HJust, extents)
 	}
 	for i, c := range n.Children {
 		if n.Tag == "row" {
@@ -306,7 +305,7 @@ func distribute(mainspace, crossspace int, mainj, crossj Justification, extents 
 				offsets[i][0] = offsets[i-1][0] + extents[i-1][0] + spacing
 			}
 		default:
-			panic(fmt.Errorf("can't handle main axis justification %s", mainj))
+			panic(fmt.Errorf("can't handle main axis justification %q", mainj))
 		}
 		switch crossj {
 		case Start:
@@ -316,7 +315,7 @@ func distribute(mainspace, crossspace int, mainj, crossj Justification, extents 
 		case Center, Evenly, Around, Between:
 			offsets[i][1] = int(math.Floor(float64(crossspace)/2)) - int(math.Floor(float64(extents[i][1])/2))
 		default:
-			panic(fmt.Errorf("can't handle cross axis justification %s", crossj))
+			panic(fmt.Errorf("can't handle cross axis justification %q", crossj))
 		}
 	}
 	return offsets

@@ -92,17 +92,6 @@ func (s *Style) adopt(node *Box) {
 	s.node = node
 }
 
-func (s *Style) justification() (Justification, Justification) {
-	hj, vj := Start, Start
-	if s.HJust != "" {
-		hj = s.HJust
-	}
-	if s.VJust != "" {
-		vj = s.VJust
-	}
-	return hj, vj
-}
-
 func (s *Style) scrollBarWidth() int {
 	if s.node.ContentHeight > s.MaxHeight && s.Scrollbar != nil {
 		return s.Scrollbar[0][0].Width()
@@ -198,6 +187,12 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing justification: %s", err)
 		}
 	}
+	if s.HJust == "" {
+		s.HJust = Start
+	}
+	if s.VJust == "" {
+		s.VJust = Start
+	}
 	if spec := s.Attrs["grow"]; spec != "" {
 		if s.HGrow, s.VGrow, err = parseGrow(spec); err != nil {
 			return fmt.Errorf("error parsing grow: %s", err)
@@ -233,9 +228,9 @@ func (s *Style) parseAttributes() error {
 			return fmt.Errorf("error parsing input: %s", err)
 		}
 	}
-	s.Float = s.node.Attrs["float"] == "true"
-	s.Hidden = s.node.Attrs["hidden"] == "true"
-	s.Display = s.node.Attrs["display"] != "false"
+	s.Float = s.Attrs["float"] == "true"
+	s.Hidden = s.Attrs["hidden"] == "true"
+	s.Display = s.Attrs["display"] != "false"
 	return nil
 }
 
@@ -304,7 +299,7 @@ func parseSpacing(spec string, font font.Face) (*Spacing, error) {
 
 func parseJustification(spec string) (Justification, Justification, error) {
 	if spec == "" {
-		return Start, Start, nil
+		return Start, Start, fmt.Errorf("invalid justification spec %q", spec)
 	}
 	justs := strings.Split(spec, " ")
 	var hj, vj Justification

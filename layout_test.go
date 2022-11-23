@@ -6,6 +6,7 @@ import (
 
 func TestJustificationExtraSpace(t *testing.T) {
 	n := &Box{}
+	n.style.parseAttributes()
 	n.layout.InnerWidth = 20
 	n.layout.InnerHeight = 20
 	bounds := [][2]int{
@@ -96,12 +97,11 @@ func TestJustificationExtraSpace(t *testing.T) {
 					OuterHeight: b[1],
 				},
 			})
+			n.Children[len(n.Children)-1].style.parseAttributes()
 		}
 		n.Tag = test.tag
-		n.style = Style{
-			HJust: test.hjust,
-			VJust: test.vjust,
-		}
+		n.style.HJust = test.hjust
+		n.style.VJust = test.vjust
 		n.justify()
 		for i, c := range n.Children {
 			if c.X != test.want[i][0] || c.Y != test.want[i][1] {
@@ -113,6 +113,7 @@ func TestJustificationExtraSpace(t *testing.T) {
 
 func TestJustificationNoExtraSpace(t *testing.T) {
 	n := &Box{}
+	n.style.parseAttributes()
 	n.layout.InnerWidth = 14
 	n.layout.InnerHeight = 4
 	bounds := [][2]int{
@@ -170,12 +171,11 @@ func TestJustificationNoExtraSpace(t *testing.T) {
 					OuterHeight: b[1],
 				},
 			})
+			n.Children[len(n.Children)-1].style.parseAttributes()
 		}
 		n.Tag = test.tag
-		n.style = Style{
-			HJust: test.hjust,
-			VJust: test.vjust,
-		}
+		n.style.HJust = test.hjust
+		n.style.VJust = test.vjust
 		n.justify()
 		for i, c := range n.Children {
 			if c.X != test.want[i][0] || c.Y != test.want[i][1] {
