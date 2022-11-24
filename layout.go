@@ -162,7 +162,7 @@ func (n *Box) grow() {
 	}
 	// finally, allow the children to grow their own children using this newly allocated space
 	for _, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.style.Display {
 			continue
 		}
 		c.grow()
@@ -260,7 +260,7 @@ func (n *Box) justify() {
 	}
 	for i, c := range n.Children {
 		if c.style.Float {
-			switch c.style.HJust {
+			switch c.style.HJustSelf {
 			case Start:
 				c.X = r.Min.X
 			case End:
@@ -268,7 +268,7 @@ func (n *Box) justify() {
 			case Center:
 				c.X = r.Min.X + (n.InnerWidth / 2) - (c.OuterWidth / 2)
 			}
-			switch c.style.VJust {
+			switch c.style.VJustSelf {
 			case Start:
 				c.Y = r.Min.Y
 			case End:

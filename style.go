@@ -55,30 +55,31 @@ type Spacing struct {
 }
 
 type Style struct {
-	Extends             string
-	Attrs               map[string]string
-	FontName            string
-	FontSize            int
-	Font                font.Face
-	Underline           bool
-	Border              *NineSlice
-	Button              *[4]*NineSlice
-	Scrollbar           *[3][4]*NineSlice
-	Input               *[4]*NineSlice
-	Image               *ebiten.Image
-	MinWidth, MinHeight int
-	MaxWidth, MaxHeight int
-	HJust, VJust        Justification
-	HGrow, VGrow        int
-	Margin, Padding     Spacing
-	Color               color.Color
-	OffsetX, OffsetY    int
-	Float               bool
-	Hidden              bool
-	Display             bool
-	ScaleX, ScaleY      float64
-	ZIndex              int
-	node                *Box
+	Extends              string
+	Attrs                map[string]string
+	FontName             string
+	FontSize             int
+	Font                 font.Face
+	Underline            bool
+	Border               *NineSlice
+	Button               *[4]*NineSlice
+	Scrollbar            *[3][4]*NineSlice
+	Input                *[4]*NineSlice
+	Image                *ebiten.Image
+	MinWidth, MinHeight  int
+	MaxWidth, MaxHeight  int
+	HJust, VJust         Justification
+	HJustSelf, VJustSelf Justification
+	HGrow, VGrow         int
+	Margin, Padding      Spacing
+	Color                color.Color
+	OffsetX, OffsetY     int
+	Float                bool
+	Hidden               bool
+	Display              bool
+	ScaleX, ScaleY       float64
+	ZIndex               int
+	node                 *Box
 }
 
 func (s *Style) adopt(node *Box) {
@@ -193,6 +194,17 @@ func (s *Style) parseAttributes() error {
 	}
 	if s.VJust == "" {
 		s.VJust = Start
+	}
+	if spec := s.Attrs["justifySelf"]; spec != "" {
+		if s.HJustSelf, s.VJustSelf, err = parseJustification(spec); err != nil {
+			return fmt.Errorf("error parsing justification: %s", err)
+		}
+	}
+	if s.HJustSelf == "" {
+		s.HJustSelf = Start
+	}
+	if s.VJustSelf == "" {
+		s.VJustSelf = Start
 	}
 	if spec := s.Attrs["grow"]; spec != "" {
 		if s.HGrow, s.VGrow, err = parseGrow(spec); err != nil {
