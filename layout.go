@@ -95,6 +95,9 @@ func (n *Box) size() {
 	}
 	for _, c := range n.Children {
 		c.size()
+		if c.style.Float {
+			continue
+		}
 		switch n.Tag {
 		case "row":
 			n.ContentWidth += c.OuterWidth
@@ -126,7 +129,7 @@ func (n *Box) grow() {
 	// sum the growth attributes to determine the relative growth of each child later
 	hgrow, vgrow := 0, 0
 	for _, c := range n.Children {
-		if !c.style.Display {
+		if !c.style.Display || c.style.Float {
 			continue
 		}
 		hgrow += c.style.HGrow
@@ -135,7 +138,7 @@ func (n *Box) grow() {
 	// allocate leftover space to each child according to their relative growth terms
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
-		if !c.style.Display {
+		if !c.style.Display || c.style.Float {
 			continue
 		}
 		if c.style.HGrow > 0 {
@@ -157,7 +160,7 @@ func (n *Box) grow() {
 	}
 	// finally, allow the children to grow their own children using this newly allocated space
 	for _, c := range n.Children {
-		if !c.style.Display {
+		if !c.style.Display || c.style.Float {
 			continue
 		}
 		c.grow()
@@ -218,6 +221,9 @@ func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
+		if !c.style.Display || c.style.Float {
+			continue
+		}
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 		var ox, oy int
@@ -233,6 +239,9 @@ func (n *Box) justify() {
 	}
 	extents := make([][2]int, len(n.Children))
 	for i, c := range n.Children {
+		if !c.style.Display || c.style.Float {
+			continue
+		}
 		if n.Tag == "row" {
 			extents[i][0] = c.OuterWidth
 			extents[i][1] = c.OuterHeight
@@ -248,6 +257,25 @@ func (n *Box) justify() {
 		offsets = distribute(vspace, n.InnerWidth, n.style.VJust, n.style.HJust, extents)
 	}
 	for i, c := range n.Children {
+		if c.style.Float {
+			switch c.style.HJust {
+			case Start:
+				c.X = r.Min.X
+			case End:
+				c.X = r.Min.X + n.InnerWidth - c.OuterWidth
+			case Center:
+				c.X = r.Min.X + (n.InnerWidth / 2) - (c.OuterWidth / 2)
+			}
+			switch c.style.VJust {
+			case Start:
+				c.Y = r.Min.Y
+			case End:
+				c.Y = r.Min.Y + n.InnerHeight - c.OuterHeight
+			case Center:
+				c.Y = r.Min.Y + (n.InnerHeight / 2) - (c.OuterHeight / 2)
+			}
+			continue
+		}
 		if n.Tag == "row" {
 			c.X += offsets[i][0]
 			c.Y += offsets[i][1]
