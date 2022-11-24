@@ -1,7 +1,7 @@
 package text
 
 import (
-	"io/ioutil"
+	"os"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -29,7 +29,7 @@ func init() {
 }
 
 func LoadFontFromFile(name, path string) error {
-	def, err := ioutil.ReadFile(path)
+	def, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
