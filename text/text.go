@@ -141,7 +141,7 @@ func drawGlyph(dst *ebiten.Image, face font.Face, r rune, dx, dy fixed.Int26_6, 
 		*op2 = *op
 	}
 	op2.GeoM.Reset()
-	op2.GeoM.Translate(fixed26_6ToFloat64((dx + b.Min.X)), fixed26_6ToFloat64((dy + b.Min.Y)))
+	op2.GeoM.Translate(math.Floor(fixed26_6ToFloat64((dx + b.Min.X))), math.Floor(fixed26_6ToFloat64((dy + b.Min.Y))))
 	if op != nil {
 		op2.GeoM.Concat(op.GeoM)
 	}
@@ -227,8 +227,8 @@ func DrawString(dst *ebiten.Image, text string, face font.Face, clr color.Color,
 	mBounds := glyphBounds(face, 'M')
 	b := BoundString(face, text)
 	w, h := float64(width), float64(height)
-	ox, oy := float64(b.Min.X), float64(mBounds.Min.Y.Round())
-	tw, th := float64(b.Dx()), float64(mBounds.Max.Y.Round())-float64(mBounds.Min.Y.Round())
+	ox, oy := float64(b.Min.X), fixed26_6ToFloat64(mBounds.Min.Y)
+	tw, th := float64(b.Dx()), fixed26_6ToFloat64(mBounds.Max.Y)-fixed26_6ToFloat64(mBounds.Min.Y)
 
 	var tx, ty float64
 

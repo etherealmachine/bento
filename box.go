@@ -24,6 +24,10 @@ const (
 	disabled = State(3)
 )
 
+var (
+	windowWidth, windowHeight int
+)
+
 type Box struct {
 	Tag        string
 	Parent     *Box
@@ -54,14 +58,14 @@ func Build(c Component) (*Box, error) {
 var keys []ebiten.Key
 
 func (n *Box) Update() error {
+	if !n.style.Display || n.style.Hidden {
+		return nil
+	}
 	if n.Parent == nil {
 		keys = inpututil.AppendPressedKeys(keys)
 		if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
 			n.ToggleDebug()
 		}
-	}
-	if !n.style.Display || n.style.Hidden {
-		return nil
 	}
 	n.state = idle
 	if n.Attrs["disabled"] == "true" {
@@ -100,6 +104,12 @@ func (n *Box) Update() error {
 		if n.dirty {
 			return n.Rebuild()
 		}
+		w, h := ebiten.WindowSize()
+		if w != windowWidth || h != windowHeight {
+			n.relayout()
+		}
+		windowWidth = w
+		windowHeight = h
 	}
 	return nil
 }
