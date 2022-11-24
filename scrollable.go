@@ -13,7 +13,7 @@ type Scrollable struct {
 	position float64
 }
 
-func (s *Scrollable) Update(b *Box) error {
+func (s *Scrollable) update(b *Box) error {
 	if b.style.Scrollbar == nil || b.Attrs["disabled"] == "true" {
 		return nil
 	}

@@ -23,21 +23,20 @@ type Event struct {
 	Value string
 }
 
-func (n *Box) fireEvent(e EventType, value string) {
+func (n *Box) fireEvent(e EventType, value string) bool {
 	x, y := ebiten.CursorPosition()
-	n.call("on"+string(e), &Event{
+	return n.call("on"+string(e), &Event{
 		X:     x - n.X,
 		Y:     y - n.Y,
 		Box:   n,
-		Type:  e,
 		Value: value,
 	})
 }
 
-func (n *Box) call(attr string, args ...interface{}) {
+func (n *Box) call(attr string, args ...interface{}) bool {
 	fnName := n.Attrs[attr]
 	if fnName == "" {
-		return
+		return false
 	}
 	m := reflect.ValueOf(n.Component).MethodByName(fnName)
 	if !m.IsValid() {
@@ -58,8 +57,9 @@ func (n *Box) call(attr string, args ...interface{}) {
 			if v.Bool() {
 				root.dirty = true
 			}
-			return
+			return true
 		}
 	}
 	root.dirty = true
+	return true
 }

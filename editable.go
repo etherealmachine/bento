@@ -21,7 +21,7 @@ func (e *Editable) Cursor() int {
 	return -1
 }
 
-func (e *Editable) Update(b *Box) error {
+func (e *Editable) update(b *Box, ctx *context) error {
 	if e == nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (e *Editable) Update(b *Box) error {
 			e.cursorTime = t
 		}
 		v := b.Attrs["value"]
-		for _, k := range keys {
+		for _, k := range ctx.keys {
 			if repeatingKeyPressed(k) {
 				s := keyToString(k, ebiten.IsKeyPressed(ebiten.KeyShift))
 				if s != "" && (s != "\n" || b.Tag == "textarea") {

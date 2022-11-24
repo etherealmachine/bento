@@ -55,52 +55,64 @@ func Build(c Component) (*Box, error) {
 	return root, nil
 }
 
-var keys []ebiten.Key
+type context struct {
+	keys     []ebiten.Key
+	consumed bool
+}
+
+var ctx context
 
 func (n *Box) Update() error {
+	if n.Parent != nil {
+		return fmt.Errorf("Update called on non-root element %s", n.Tag)
+	}
+	ctx.consumed = false
+	return n.update(&ctx)
+}
+
+func (n *Box) update(ctx *context) error {
 	if !n.style.Display || n.style.Hidden {
 		return nil
 	}
 	if n.Parent == nil {
-		keys = inpututil.AppendPressedKeys(keys)
+		ctx.keys = inpututil.AppendPressedKeys(ctx.keys)
 		if ebiten.IsKeyPressed(ebiten.KeyControlLeft) && inpututil.IsKeyJustPressed(ebiten.KeyD) {
 			n.ToggleDebug()
+		}
+	}
+	// reverse draw order so that highest zIndex consumes events first
+	for i := range n.Children {
+		if err := n.Children[len(n.Children)-i-1].update(ctx); err != nil {
+			return err
 		}
 	}
 	n.state = idle
 	if n.Attrs["disabled"] == "true" {
 		n.state = disabled
-	} else {
-		x, y := ebiten.CursorPosition()
-		if inside(n.innerRect(), x, y) {
-			if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-				n.state = active
-				if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-					n.fireEvent(Click, "")
-				} else {
-					n.state = hover
-					n.fireEvent(Hover, "")
-				}
-			} else {
-				n.state = hover
-				n.fireEvent(Hover, "")
-			}
+	} else if x, y := ebiten.CursorPosition(); !ctx.consumed && inside(n.innerRect(), x, y) {
+		switch {
+		case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
+			n.state = active
+			ctx.consumed = n.fireEvent(Click, "")
+		case ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
+			n.state = active
+			n.fireEvent(Hover, "")
+			ctx.consumed = true
+		default:
+			n.state = hover
+			n.fireEvent(Hover, "")
+			ctx.consumed = true
 		}
 	}
-	if err := n.editable.Update(n); err != nil {
+	if err := n.editable.update(n, ctx); err != nil {
 		return err
 	}
-	if err := n.scrollable.Update(n); err != nil {
+	if err := n.scrollable.update(n); err != nil {
 		return err
 	}
 	n.fireEvent(Update, "")
-	for _, child := range n.Children {
-		if err := child.Update(); err != nil {
-			return err
-		}
-	}
 	if n.Parent == nil {
-		keys = keys[:0]
+		ctx.keys = ctx.keys[:0]
 		if n.dirty {
 			return n.Rebuild()
 		}
