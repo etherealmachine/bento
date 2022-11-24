@@ -21,13 +21,13 @@ func (n *Box) Draw(img *ebiten.Image) {
 	op := new(ebiten.DrawImageOptions)
 	op.GeoM.Translate(float64(n.X), float64(n.Y))
 
-	if n.Debug {
+	if debug {
 		// Outer
 		drawBox(img, n.OuterWidth, n.OuterHeight, color.White, true, op)
 	}
 
 	op.GeoM.Translate(float64(ml), float64(mt))
-	if n.Debug {
+	if debug {
 		// Inner
 		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
@@ -48,7 +48,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
-	if n.Debug {
+	if debug {
 		// Content
 		drawBox(img, n.ContentWidth, n.ContentHeight, &color.RGBA{R: 100, G: 100, B: 100, A: 255}, true, op)
 	}
@@ -106,7 +106,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		log.Fatalf("can't draw %s", n.Tag)
 	}
 
-	if n.Debug {
+	if debug {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(n.X), float64(n.Y))
 		// Annotate
@@ -123,7 +123,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 		c.Draw(img)
 	}
 
-	if n.Debug && n.Parent == nil {
+	if debug && n.Parent == nil {
 		op := new(ebiten.DrawImageOptions)
 		op.GeoM.Translate(float64(img.Bounds().Dx()-48), 24)
 		txt := fmt.Sprintf("%.0f", ebiten.CurrentFPS())

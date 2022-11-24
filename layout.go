@@ -5,6 +5,7 @@ import (
 	"image"
 	"log"
 	"math"
+	"sort"
 
 	"github.com/etherealmachine/bento/text"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -25,6 +26,7 @@ func (n *Box) relayout() {
 	n.size()
 	n.grow()
 	n.justify()
+	n.sort()
 }
 
 func (n *Box) outerRect() image.Rectangle {
@@ -347,4 +349,17 @@ func distribute(mainspace, crossspace int, mainj, crossj Justification, extents 
 		}
 	}
 	return offsets
+}
+
+// sort children by zIndex
+func (n *Box) sort() {
+	for i, c := range n.Children {
+		if c.style.ZIndex == 0 {
+			c.style.ZIndex = i + 1
+		}
+		c.sort()
+	}
+	sort.Slice(n.Children, func(i, j int) bool {
+		return n.Children[i].style.ZIndex < n.Children[j].style.ZIndex
+	})
 }

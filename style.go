@@ -77,6 +77,7 @@ type Style struct {
 	Hidden              bool
 	Display             bool
 	ScaleX, ScaleY      float64
+	ZIndex              int
 	node                *Box
 }
 
@@ -210,10 +211,16 @@ func (s *Style) parseAttributes() error {
 	}
 	if spec := s.Attrs["scale"]; spec != "" {
 		if s.ScaleX, s.ScaleY, err = parseScale(spec); err != nil {
-			return fmt.Errorf("error parsing float: %s", err)
+			return fmt.Errorf("error parsing scale: %s", err)
 		}
 	} else {
 		s.ScaleX, s.ScaleY = 1, 1
+	}
+	if spec := s.Attrs["zIndex"]; spec != "" {
+		s.ZIndex, err = strconv.Atoi(spec)
+		if err != nil {
+			return fmt.Errorf("error parsing zIndex: %s", err)
+		}
 	}
 	if s.Button == nil {
 		if s.Button, err = ParseButton(s.Attrs["btn"]); err != nil {

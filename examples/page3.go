@@ -27,6 +27,7 @@ func (p *Page3) UI() string {
 <img src="profile.png" float="true" justify="end start" />
 ]]>	
 		</p>
+		<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="100" />
 		<img src="profile.png" float="true" justify="end start" />
 		<input
 				minWidth="20em"

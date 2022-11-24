@@ -67,7 +67,6 @@ func (n *Box) build(prev *Box) error {
 		n.state = prev.state
 		n.editable = prev.editable
 		n.scrollable = prev.scrollable
-		n.Debug = prev.Debug
 	} else {
 		if n.Tag == "input" || n.Tag == "textarea" {
 			n.editable = &Editable{}

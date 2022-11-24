@@ -26,13 +26,13 @@ const (
 
 var (
 	windowWidth, windowHeight int
+	debug                     bool
 )
 
 type Box struct {
 	Tag        string
 	Parent     *Box
 	Children   []*Box
-	Debug      bool
 	Content    string
 	Component  Component
 	Attrs      map[string]string
@@ -131,14 +131,7 @@ func (n *Box) Rebuild() error {
 }
 
 func (n *Box) ToggleDebug() {
-	if n.Parent != nil {
-		n.Parent.ToggleDebug()
-		return
-	}
-	n.visit(0, func(_ int, n *Box) error {
-		n.Debug = !n.Debug
-		return nil
-	})
+	debug = !debug
 }
 
 func (n *Box) String() string {
@@ -148,9 +141,6 @@ func (n *Box) String() string {
 			buf.WriteByte('\t')
 		}
 		row := []string{n.Tag}
-		if n.Debug {
-			row = append(row, "Debug")
-		}
 		if n.Component == nil {
 			row = append(row, "<nil>")
 		} else if n.Parent == nil || n.Component != n.Parent.Component {
