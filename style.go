@@ -212,6 +212,8 @@ func (s *Style) parseAttributes() error {
 		if s.ScaleX, s.ScaleY, err = parseScale(spec); err != nil {
 			return fmt.Errorf("error parsing float: %s", err)
 		}
+	} else {
+		s.ScaleX, s.ScaleY = 1, 1
 	}
 	if s.Button == nil {
 		if s.Button, err = ParseButton(s.Attrs["btn"]); err != nil {
