@@ -24,6 +24,7 @@ func (p *Page3) UI() string {
 				padding="16px 24px">
 <![CDATA[
 // Images with the <img> tag
+<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="100" />
 <img src="profile.png" float="true" justify="end start" />
 ]]>	
 		</p>
