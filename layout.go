@@ -196,7 +196,7 @@ func (n *Box) space() (int, int) {
 	totalChildWidths := 0
 	totalChildHeights := 0
 	for _, c := range n.Children {
-		if !c.style.Display {
+		if !c.style.Display || c.style.Float {
 			continue
 		}
 		maxChildWidth = max(maxChildWidth, c.OuterWidth)
