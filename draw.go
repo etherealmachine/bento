@@ -99,12 +99,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 				n.drawScrollbar(img, op)
 			}
 		}
-	case "canvas":
-		n.call("onDraw", img)
-	case "row", "col":
+	case "canvas", "row", "col":
 	default:
 		log.Fatalf("can't draw %s", n.Tag)
 	}
+	n.fireEvent(Draw, "", img, op)
 
 	if debug {
 		op := new(ebiten.DrawImageOptions)

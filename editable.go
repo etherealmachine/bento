@@ -68,7 +68,7 @@ func (e *Editable) update(b *Box, ctx *context) error {
 			}
 		}
 		if b.Attrs["value"] != v {
-			b.fireEvent(Change, v)
+			b.fireEvent(Change, v, nil, nil)
 		}
 	} else {
 		e.displayCursor = false

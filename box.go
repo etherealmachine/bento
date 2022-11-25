@@ -93,14 +93,14 @@ func (n *Box) update(ctx *context) error {
 		switch {
 		case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
 			n.state = active
-			ctx.consumed = n.fireEvent(Click, "")
+			ctx.consumed = n.fireEvent(Click, "", nil, nil)
 		case ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
 			n.state = active
-			n.fireEvent(Hover, "")
+			n.fireEvent(Hover, "", nil, nil)
 			ctx.consumed = true
 		default:
 			n.state = hover
-			n.fireEvent(Hover, "")
+			n.fireEvent(Hover, "", nil, nil)
 			ctx.consumed = true
 		}
 	}
@@ -110,7 +110,7 @@ func (n *Box) update(ctx *context) error {
 	if err := n.scrollable.update(n); err != nil {
 		return err
 	}
-	n.fireEvent(Update, "")
+	n.fireEvent(Update, "", nil, nil)
 	if n.Parent == nil {
 		ctx.keys = ctx.keys[:0]
 		if n.dirty {
