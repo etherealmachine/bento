@@ -90,18 +90,22 @@ func (n *Box) update(ctx *context) error {
 	if n.Attrs["disabled"] == "true" {
 		n.state = disabled
 	} else if x, y := ebiten.CursorPosition(); !ctx.consumed && inside(n.innerRect(), x, y) {
-		switch {
-		case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
-			n.state = active
-			ctx.consumed = n.fireEvent(Click, "", nil, nil)
-		case ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
-			n.state = active
-			n.fireEvent(Hover, "", nil, nil)
-			ctx.consumed = true
-		default:
-			n.state = hover
-			n.fireEvent(Hover, "", nil, nil)
-			ctx.consumed = true
+		if sx, sy := ebiten.Wheel(); sx != 0 || sy != 0 {
+			ctx.consumed = n.fireEvent(Scroll, "", nil, nil)
+		} else {
+			switch {
+			case inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft):
+				n.state = active
+				ctx.consumed = n.fireEvent(Click, "", nil, nil)
+			case ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
+				n.state = active
+				n.fireEvent(Hover, "", nil, nil)
+				ctx.consumed = true
+			default:
+				n.state = hover
+				n.fireEvent(Hover, "", nil, nil)
+				ctx.consumed = true
+			}
 		}
 	}
 	if err := n.editable.update(n, ctx); err != nil {

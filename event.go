@@ -11,6 +11,7 @@ type EventType string
 
 const (
 	Click  = EventType("Click")
+	Scroll = EventType("Scroll")
 	Hover  = EventType("Hover")
 	Change = EventType("Change")
 	Draw   = EventType("Draw")
@@ -18,24 +19,28 @@ const (
 )
 
 type Event struct {
-	X, Y  int
-	Box   *Box
-	Type  EventType
-	Image *ebiten.Image
-	Op    *ebiten.DrawImageOptions
-	Value string
+	X, Y             int
+	ScrollX, ScrollY float64
+	Box              *Box
+	Type             EventType
+	Image            *ebiten.Image
+	Op               *ebiten.DrawImageOptions
+	Value            string
 }
 
 func (n *Box) fireEvent(e EventType, value string, img *ebiten.Image, op *ebiten.DrawImageOptions) bool {
 	x, y := ebiten.CursorPosition()
+	sx, sy := ebiten.Wheel()
 	return n.call("on"+string(e), &Event{
-		X:     x - n.X,
-		Y:     y - n.Y,
-		Type:  e,
-		Box:   n,
-		Value: value,
-		Image: img,
-		Op:    op,
+		X:       x - n.X,
+		Y:       y - n.Y,
+		ScrollX: sx,
+		ScrollY: sy,
+		Type:    e,
+		Box:     n,
+		Value:   value,
+		Image:   img,
+		Op:      op,
 	})
 }
 
