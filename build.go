@@ -22,16 +22,21 @@ func (n *Box) isSubcomponent() bool {
 }
 
 func (n *Box) buildSubcomponent(prev *Box) error {
-	m := reflect.ValueOf(n.Component).MethodByName(n.Tag)
-	if !m.IsValid() {
-		return fmt.Errorf("%s has no method named %s", reflect.TypeOf(n.Component), n.Tag)
+
+	var subComponent reflect.Value
+	if m := reflect.ValueOf(n.Component).MethodByName(n.Tag); m.IsValid() {
+		res := m.Call(nil)
+		subComponent = res[0]
+	} else if field := reflect.ValueOf(n.Component).Elem().FieldByName(n.Tag); field.IsValid() {
+		subComponent = field
+	} else {
+		return fmt.Errorf("%s must have a field or method named %s that returns a bento.Component", reflect.TypeOf(n.Component), n.Tag)
 	}
-	res := m.Call(nil)
-	if style, ok := res[0].Interface().(*Style); ok {
+	if style, ok := subComponent.Interface().(*Style); ok {
 		n.style = *style
 		n.Tag = style.Extends
 		return nil
-	} else if sub, ok := res[0].Interface().(Component); ok {
+	} else if sub, ok := subComponent.Interface().(Component); ok {
 		subNode := &Box{
 			Component: sub,
 			Parent:    n.Parent,
