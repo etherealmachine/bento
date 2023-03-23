@@ -1,14 +1,16 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/etherealmachine/bento.svg)](https://pkg.go.dev/github.com/etherealmachine/bento)
 [![Build Status](https://github.com/etherealmachine/bento/workflows/Go/badge.svg)](https://github.com/etherealmachine/bento/actions?query=workflow%3AGo)
+
 # Bento
 
 [Demo](https://etherealmachine.github.io/bento/)
 
 # An XML based UI builder for Ebiten
+
 It's like HTML/React, but for Ebiten!
 
-* Support for buttons, text, scrollable paragraphs, text input, and text areas
-* Small but useful set of layout options to build a responsive UI
+- Support for buttons, text, scrollable paragraphs, text input, and text areas
+- Small but useful set of layout options to build a responsive UI
 
 ![Screenshot of Page 1 of the Demo](https://user-images.githubusercontent.com/460276/202970256-4555e26d-62b2-4e09-9edb-1cb490187237.png)
 ![Screenshot of Page 2 of the Demo](https://user-images.githubusercontent.com/460276/202970335-794b1d26-6b0c-4f5a-9fe6-982d47b84421.png)
@@ -82,26 +84,41 @@ It even supports scrollable paragraphs of text!
 ```
 
 ## Supported Styling
-* Font Name and Size `font="NotoSans 24"`
-* Font Color `color="#ffffff"`
-* Margin `margin="20px"`
-* Padding `padding="10px"`
-* Underline Text `underline="true"`
-* minWidth, minHeight, maxWidth, maxHeight
-* Horizontal/Vertical Growth `grow="1 2"`
-* Horizontal/Vertical Justification `justify="start center"`
-  * `start`, `end`, `center`, `evenly`, `around`, `between`
-* X/Y Offset `offset="4 12"`
-* Scale (`img` only) `scale="2"`
 
+- Font Name and Size `font="NotoSans 24"`
+- Font Color `color="#ffffff"`
+- Margin `margin="20px"`
+- Padding `padding="10px"`
+- Underline Text `underline="true"`
+- minWidth, minHeight, maxWidth, maxHeight
+- Horizontal/Vertical Growth `grow="1 2"`
+- Horizontal/Vertical Justification `justify="start center"`
+  - `start`, `end`, `center`, `evenly`, `around`, `between`
+- X/Y Offset `offset="4 12"`
+- Scale (`img` only) `scale="2"`
 
 ## Events and Callbacks
+
 ```
+type EventType string
+
+const (
+	Click  = EventType("Click")
+	Scroll = EventType("Scroll")
+	Hover  = EventType("Hover")
+	Change = EventType("Change")
+	Draw   = EventType("Draw")
+	Update = EventType("Update")
+)
+
 type Event struct {
-	X, Y  int       # For Click and Hover events
-	Box   *Box
-	Type  EventType # Click, Hover, Change, Update
-	Value string    # For Input and Textarea Change events
+	X, Y             int // Mouse position, relative to the current box
+	ScrollX, ScrollY float64
+	Box              *Box
+	Type             EventType
+	Image            *ebiten.Image            // Canvas element
+	Op               *ebiten.DrawImageOptions // Canvas element
+	Value            string                   // Input and Textarea elements
 }
 ```
 
@@ -115,9 +132,6 @@ The X and Y fields of the `Event` will have the mouse coordinates relative to th
 
 **onUpdate** is fired every frame
 
-**onDraw** is fired on the `canvas` element. An onDraw handler **must** take a single `*ebiten.Image` argument
+**onDraw** is fired on the `canvas` element. The `Image` field of the event contains the entire UI image, so the element can overdraw its assigned bounds. The `Op` field and `event.Box.Bounds()` is useful to get the current transformation and layout rectangle for the element and restrict drawing to inside this rect.
 
-Click, Hover, Change, and Update handlers **may** either take a single `*bento.Event` argument, or zero arguments.
-
-All handlers **may** return a boolean as an optimization hint. If the handler returns true, bento will automatically recompute the template and regenerate the UI tree.
-This is an expensive operation, so handlers should return false if no variables were changed during the callback.
+All handlers **may** return a boolean as an optimization hint. If the handler returns true, bento will automatically recompute the template and regenerate the UI tree. This is an expensive operation, so handlers should return false if no variables were changed during the callback.

@@ -19,13 +19,13 @@ const (
 )
 
 type Event struct {
-	X, Y             int
+	X, Y             int // Mouse position, relative to the current box
 	ScrollX, ScrollY float64
 	Box              *Box
 	Type             EventType
-	Image            *ebiten.Image
-	Op               *ebiten.DrawImageOptions
-	Value            string
+	Image            *ebiten.Image            // Canvas element
+	Op               *ebiten.DrawImageOptions // Canvas element
+	Value            string                   // Input and Textarea elements
 }
 
 func (n *Box) fireEvent(e EventType, value string, img *ebiten.Image, op *ebiten.DrawImageOptions) bool {
