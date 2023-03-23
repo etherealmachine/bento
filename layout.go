@@ -34,20 +34,20 @@ func (n *Box) outerRect() image.Rectangle {
 }
 
 func (n *Box) innerRect() image.Rectangle {
-	mt, ml := n.style.Margin.Top, n.style.Margin.Left
+	mt, ml := n.Style.Margin.Top, n.Style.Margin.Left
 	return image.Rect(n.X+ml, n.Y+mt, n.X+ml+n.InnerWidth, n.Y+mt+n.InnerHeight)
 }
 
 func (n *Box) maxContentWidth() int {
-	if n.style.MaxWidth > 0 {
-		return n.style.MaxWidth
+	if n.Style.MaxWidth > 0 {
+		return n.Style.MaxWidth
 	}
 	return n.ContentWidth
 }
 
 func (n *Box) maxContentHeight() int {
-	if n.style.MaxHeight > 0 {
-		return n.style.MaxHeight
+	if n.Style.MaxHeight > 0 {
+		return n.Style.MaxHeight
 	}
 	return n.ContentHeight
 }
@@ -57,7 +57,7 @@ func (n *Box) maxContentHeight() int {
 func (n *Box) size() {
 	n.ContentWidth = 0
 	n.ContentHeight = 0
-	if !n.style.Display {
+	if !n.Style.Display {
 		n.InnerWidth = 0
 		n.InnerHeight = 0
 		n.OuterWidth = 0
@@ -65,39 +65,39 @@ func (n *Box) size() {
 		return
 	}
 	if n.Tag == "button" || n.Tag == "text" {
-		bounds := text.BoundString(n.style.Font, n.Content)
+		bounds := text.BoundString(n.Style.Font, n.Content)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
+		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "p" {
-		bounds := text.BoundParagraph(n.style.Font, n.Content, n.style.MaxWidth)
+		bounds := text.BoundParagraph(n.Style.Font, n.Content, n.Style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
-	} else if n.Tag == "img" && n.style.Image != nil {
-		bounds := n.style.Image.Bounds()
-		n.ContentWidth = int(float64(bounds.Dx()) * n.style.ScaleX)
-		n.ContentHeight = int(float64(bounds.Dy()) * n.style.ScaleY)
+		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
+	} else if n.Tag == "img" && n.Style.Image != nil {
+		bounds := n.Style.Image.Bounds()
+		n.ContentWidth = int(float64(bounds.Dx()) * n.Style.ScaleX)
+		n.ContentHeight = int(float64(bounds.Dy()) * n.Style.ScaleY)
 	} else if n.Tag == "input" {
 		txt := n.Content
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
-		bounds := text.BoundString(n.style.Font, txt)
+		bounds := text.BoundString(n.Style.Font, txt)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = n.style.Font.Metrics().Height.Ceil()
+		n.ContentHeight = n.Style.Font.Metrics().Height.Ceil()
 	} else if n.Tag == "textarea" {
 		txt := n.Content
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
-		bounds := text.BoundParagraph(n.style.Font, txt, n.style.MaxWidth)
+		bounds := text.BoundParagraph(n.Style.Font, txt, n.Style.MaxWidth)
 		n.ContentWidth = bounds.Dx()
-		n.ContentHeight = max(bounds.Dy(), n.style.Font.Metrics().Height.Ceil())
+		n.ContentHeight = max(bounds.Dy(), n.Style.Font.Metrics().Height.Ceil())
 	} else if n.Tag != "canvas" && n.Tag != "row" && n.Tag != "col" {
 		log.Fatalf("can't size %s", n.Tag)
 	}
 	for _, c := range n.Children {
 		c.size()
-		if c.style.Float {
+		if c.Style.Float {
 			continue
 		}
 		switch n.Tag {
@@ -110,10 +110,10 @@ func (n *Box) size() {
 		}
 	}
 	n.styleSize()
-	n.InnerWidth = n.ContentWidth + n.style.Padding.Left + n.style.Padding.Right
-	n.InnerHeight = n.ContentHeight + n.style.Padding.Top + n.style.Padding.Bottom
-	n.OuterWidth = n.InnerWidth + n.style.Margin.Left + n.style.Margin.Right
-	n.OuterHeight = n.InnerHeight + n.style.Margin.Top + n.style.Margin.Bottom
+	n.InnerWidth = n.ContentWidth + n.Style.Padding.Left + n.Style.Padding.Right
+	n.InnerHeight = n.ContentHeight + n.Style.Padding.Top + n.Style.Padding.Bottom
+	n.OuterWidth = n.InnerWidth + n.Style.Margin.Left + n.Style.Margin.Right
+	n.OuterHeight = n.InnerHeight + n.Style.Margin.Top + n.Style.Margin.Bottom
 }
 
 // grow children of the box to fit the space available, using their "grow" attribute
@@ -121,39 +121,39 @@ func (n *Box) grow() {
 	// special case - the root of the tree can grow in either direction to fit the full window
 	if n.Parent == nil {
 		w, h := ebiten.WindowSize()
-		if n.style.HGrow > 0 {
+		if n.Style.HGrow > 0 {
 			n.fillWidth(w)
 		}
-		if n.style.VGrow > 0 {
+		if n.Style.VGrow > 0 {
 			n.fillHeight(h)
 		}
 	}
 	// sum the growth attributes to determine the relative growth of each child later
 	hgrow, vgrow := 0, 0
 	for _, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.Style.Display || c.Style.Float {
 			continue
 		}
-		hgrow += c.style.HGrow
-		vgrow += c.style.VGrow
+		hgrow += c.Style.HGrow
+		vgrow += c.Style.VGrow
 	}
 	// allocate leftover space to each child according to their relative growth terms
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.Style.Display || c.Style.Float {
 			continue
 		}
-		if c.style.HGrow > 0 {
+		if c.Style.HGrow > 0 {
 			if n.Tag == "row" {
-				halloc := int(math.Floor(float64(c.style.HGrow) / float64(hgrow) * float64(hspace)))
+				halloc := int(math.Floor(float64(c.Style.HGrow) / float64(hgrow) * float64(hspace)))
 				c.fillWidth(c.OuterWidth + halloc)
 			} else {
 				c.fillWidth(n.ContentWidth)
 			}
 		}
-		if c.style.VGrow > 0 && vgrow > 0 {
+		if c.Style.VGrow > 0 && vgrow > 0 {
 			if n.Tag == "col" {
-				valloc := int(math.Floor(float64(c.style.VGrow) / float64(vgrow) * float64(vspace)))
+				valloc := int(math.Floor(float64(c.Style.VGrow) / float64(vgrow) * float64(vspace)))
 				c.fillHeight(c.OuterHeight + valloc)
 			} else {
 				c.fillHeight(n.ContentHeight)
@@ -162,7 +162,7 @@ func (n *Box) grow() {
 	}
 	// finally, allow the children to grow their own children using this newly allocated space
 	for _, c := range n.Children {
-		if !c.style.Display {
+		if !c.Style.Display {
 			continue
 		}
 		c.grow()
@@ -173,8 +173,8 @@ func (n *Box) fillWidth(w int) {
 	if w < n.OuterWidth {
 		return
 	}
-	mr, ml := n.style.Margin.Right, n.style.Margin.Left
-	pr, pl := n.style.Padding.Right, n.style.Padding.Left
+	mr, ml := n.Style.Margin.Right, n.Style.Margin.Left
+	pr, pl := n.Style.Padding.Right, n.Style.Padding.Left
 	n.OuterWidth = w
 	n.InnerWidth = n.OuterWidth - ml - mr
 	n.ContentWidth = n.InnerWidth - pr - pl
@@ -184,8 +184,8 @@ func (n *Box) fillHeight(h int) {
 	if h < n.OuterHeight {
 		return
 	}
-	mt, mb := n.style.Margin.Top, n.style.Margin.Bottom
-	pt, pb := n.style.Padding.Top, n.style.Padding.Bottom
+	mt, mb := n.Style.Margin.Top, n.Style.Margin.Bottom
+	pt, pb := n.Style.Padding.Top, n.Style.Padding.Bottom
 	n.OuterHeight = h
 	n.InnerHeight = n.OuterHeight - mt - mb
 	n.ContentHeight = n.InnerHeight - pt - pb
@@ -198,7 +198,7 @@ func (n *Box) space() (int, int) {
 	totalChildWidths := 0
 	totalChildHeights := 0
 	for _, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.Style.Display || c.Style.Float {
 			continue
 		}
 		maxChildWidth = max(maxChildWidth, c.OuterWidth)
@@ -223,13 +223,13 @@ func (n *Box) justify() {
 	r := n.innerRect()
 	hspace, vspace := n.space()
 	for _, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.Style.Display || c.Style.Float {
 			continue
 		}
 		c.X = r.Min.X
 		c.Y = r.Min.Y
 		var ox, oy int
-		ox, oy = c.style.OffsetX, c.style.OffsetY
+		ox, oy = c.Style.OffsetX, c.Style.OffsetY
 		if ox < 0 {
 			ox = n.InnerWidth - c.OuterWidth + ox + 1
 		}
@@ -241,7 +241,7 @@ func (n *Box) justify() {
 	}
 	extents := make([][2]int, len(n.Children))
 	for i, c := range n.Children {
-		if !c.style.Display || c.style.Float {
+		if !c.Style.Display || c.Style.Float {
 			continue
 		}
 		if n.Tag == "row" {
@@ -254,13 +254,13 @@ func (n *Box) justify() {
 	}
 	var offsets [][2]int
 	if n.Tag == "row" {
-		offsets = distribute(hspace, n.InnerHeight, n.style.HJust, n.style.VJust, extents)
+		offsets = distribute(hspace, n.InnerHeight, n.Style.HJust, n.Style.VJust, extents)
 	} else {
-		offsets = distribute(vspace, n.InnerWidth, n.style.VJust, n.style.HJust, extents)
+		offsets = distribute(vspace, n.InnerWidth, n.Style.VJust, n.Style.HJust, extents)
 	}
 	for i, c := range n.Children {
-		if c.style.Float {
-			switch c.style.HJustSelf {
+		if c.Style.Float {
+			switch c.Style.HJustSelf {
 			case Start:
 				c.X = r.Min.X
 			case End:
@@ -268,7 +268,7 @@ func (n *Box) justify() {
 			case Center:
 				c.X = r.Min.X + (n.InnerWidth / 2) - (c.OuterWidth / 2)
 			}
-			switch c.style.VJustSelf {
+			switch c.Style.VJustSelf {
 			case Start:
 				c.Y = r.Min.Y
 			case End:
@@ -354,12 +354,12 @@ func distribute(mainspace, crossspace int, mainj, crossj Justification, extents 
 // sort children by zIndex
 func (n *Box) sort() {
 	for i, c := range n.Children {
-		if c.style.ZIndex == 0 {
-			c.style.ZIndex = i + 1
+		if c.Style.ZIndex == 0 {
+			c.Style.ZIndex = i + 1
 		}
 		c.sort()
 	}
 	sort.Slice(n.Children, func(i, j int) bool {
-		return n.Children[i].style.ZIndex < n.Children[j].style.ZIndex
+		return n.Children[i].Style.ZIndex < n.Children[j].Style.ZIndex
 	})
 }

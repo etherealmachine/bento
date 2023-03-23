@@ -14,11 +14,11 @@ type Scrollable struct {
 }
 
 func (s *Scrollable) update(b *Box) error {
-	if b.style.Scrollbar == nil || b.Attrs["disabled"] == "true" {
+	if b.Style.Scrollbar == nil || b.Attrs["disabled"] == "true" {
 		return nil
 	}
-	mt, ml := b.style.Margin.Top, b.style.Margin.Left
-	pt, pl := b.style.Padding.Top, b.style.Padding.Left
+	mt, ml := b.Style.Margin.Top, b.Style.Margin.Left
+	pt, pl := b.Style.Padding.Top, b.Style.Padding.Left
 	rects := b.scrollRects(s.position)
 	for i := 0; i < 4; i++ {
 		if i == 2 {

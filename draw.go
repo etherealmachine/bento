@@ -12,11 +12,11 @@ import (
 )
 
 func (n *Box) Draw(img *ebiten.Image) {
-	if !n.style.Display || n.style.Hidden {
+	if !n.Style.Display || n.Style.Hidden {
 		return
 	}
-	mt, ml := n.style.Margin.Top, n.style.Margin.Left
-	pt, pl := n.style.Padding.Top, n.style.Padding.Left
+	mt, ml := n.Style.Margin.Top, n.Style.Margin.Left
+	pt, pl := n.Style.Padding.Top, n.Style.Padding.Left
 
 	op := new(ebiten.DrawImageOptions)
 	op.GeoM.Translate(float64(n.X), float64(n.Y))
@@ -32,19 +32,19 @@ func (n *Box) Draw(img *ebiten.Image) {
 		drawBox(img, n.InnerWidth, n.InnerHeight, &color.RGBA{R: 200, G: 200, B: 200, A: 255}, true, op)
 	}
 
-	if n.style.Border != nil {
-		n.style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+	if n.Style.Border != nil {
+		n.Style.Border.Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	switch n.Tag {
 	case "button":
-		n.style.Button[n.state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.Style.Button[n.state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	case "input", "textarea":
 		state := n.state
 		if n.editable.focus {
 			state = active
 		}
-		n.style.Input[state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
+		n.Style.Input[state].Draw(img, 0, 0, n.InnerWidth, n.InnerHeight, op)
 	}
 
 	op.GeoM.Translate(float64(pl), float64(pt))
@@ -55,11 +55,11 @@ func (n *Box) Draw(img *ebiten.Image) {
 
 	switch n.Tag {
 	case "button", "text":
-		text.DrawString(img, n.Content, n.style.Font, n.style.Color, n.style.Underline, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
+		text.DrawString(img, n.Content, n.Style.Font, n.Style.Color, n.Style.Underline, n.ContentWidth, n.ContentHeight, text.Center, text.Center, -1, *op)
 	case "p":
-		if n.style.Scrollbar != nil {
+		if n.Style.Scrollbar != nil {
 			n.scrollable.position = text.DrawParagraph(
-				img, n.Content, n.style.Font, n.style.Color, n.style.Underline,
+				img, n.Content, n.Style.Font, n.Style.Color, n.Style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				-1, n.scrollable.line,
 				*op)
@@ -69,28 +69,28 @@ func (n *Box) Draw(img *ebiten.Image) {
 			}
 		} else {
 			text.DrawParagraph(
-				img, n.Content, n.style.Font, n.style.Color, n.style.Underline,
+				img, n.Content, n.Style.Font, n.Style.Color, n.Style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				-1, -1,
 				*op)
 		}
 	case "img":
 		imgOp := new(ebiten.DrawImageOptions)
-		imgOp.GeoM.Scale(n.style.ScaleX, n.style.ScaleY)
+		imgOp.GeoM.Scale(n.Style.ScaleX, n.Style.ScaleY)
 		imgOp.GeoM.Translate(float64(n.X), float64(n.Y))
 		imgOp.GeoM.Translate(float64(ml), float64(mt))
 		imgOp.GeoM.Translate(float64(pl), float64(pt))
-		img.DrawImage(n.style.Image, imgOp)
+		img.DrawImage(n.Style.Image, imgOp)
 	case "input", "textarea":
 		txt := n.Attrs["value"]
 		if txt == "" {
 			txt = n.Attrs["placeholder"]
 		}
 		if n.Tag == "input" {
-			text.DrawString(img, txt, n.style.Font, n.style.Color, n.style.Underline, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
+			text.DrawString(img, txt, n.Style.Font, n.Style.Color, n.Style.Underline, n.ContentWidth, n.ContentHeight, text.Start, text.Center, n.editable.Cursor(), *op)
 		} else {
 			n.scrollable.position = text.DrawParagraph(
-				img, txt, n.style.Font, n.style.Color, n.style.Underline,
+				img, txt, n.Style.Font, n.Style.Color, n.Style.Underline,
 				n.maxContentWidth(), n.maxContentHeight(),
 				n.editable.Cursor(), n.scrollable.line,
 				*op)
@@ -151,14 +151,14 @@ func drawBox(img *ebiten.Image, width, height int, c color.Color, border bool, o
 
 func (n *Box) drawScrollbar(img *ebiten.Image, op *ebiten.DrawImageOptions) {
 	for i, r := range n.scrollRects(n.scrollable.position) {
-		btn := n.style.Scrollbar[n.scrollable.state[i]][i]
+		btn := n.Style.Scrollbar[n.scrollable.state[i]][i]
 		btn.Draw(img, r.Min.X, r.Min.Y, r.Dx(), r.Dy(), op)
 	}
 }
 
 func (n *Box) scrollRects(scrollPos float64) [4]image.Rectangle {
 	var rects [4]image.Rectangle
-	s := n.style.Scrollbar[0][0].Width()
+	s := n.Style.Scrollbar[0][0].Width()
 	sf := float64(s)
 	trackHeight := float64(n.InnerHeight) - 2.5*sf
 	rects[0] = image.Rect(n.ContentWidth-s, 0, n.ContentWidth, s)               // top button

@@ -102,20 +102,20 @@ func (s *Style) scrollBarWidth() int {
 }
 
 func (n *Box) styleSize() {
-	n.ContentWidth += n.style.scrollBarWidth()
-	if n.style.MinWidth > 0 {
-		n.ContentWidth = max(n.ContentWidth, n.style.MinWidth)
+	n.ContentWidth += n.Style.scrollBarWidth()
+	if n.Style.MinWidth > 0 {
+		n.ContentWidth = max(n.ContentWidth, n.Style.MinWidth)
 	}
-	if n.style.MinHeight > 0 {
-		n.ContentHeight = max(n.ContentHeight, n.style.MinHeight)
+	if n.Style.MinHeight > 0 {
+		n.ContentHeight = max(n.ContentHeight, n.Style.MinHeight)
 	}
 	if n.Tag == "p" {
-		metrics := n.style.Font.Metrics()
+		metrics := n.Style.Font.Metrics()
 		minHeight := metrics.Height.Round()
 		n.ContentHeight = max(n.ContentHeight, minHeight)
 	}
-	if n.style.MaxHeight > 0 && n.ContentHeight > n.style.MaxHeight {
-		n.ContentHeight = n.style.MaxHeight
+	if n.Style.MaxHeight > 0 && n.ContentHeight > n.Style.MaxHeight {
+		n.ContentHeight = n.Style.MaxHeight
 	}
 }
 
@@ -538,6 +538,11 @@ func parseColor(spec string) (color.Color, error) {
 	}
 
 	switch len(spec) {
+	case 9:
+		c.R = hexToByte(spec[1])<<4 + hexToByte(spec[2])
+		c.G = hexToByte(spec[3])<<4 + hexToByte(spec[4])
+		c.B = hexToByte(spec[5])<<4 + hexToByte(spec[6])
+		c.A = hexToByte(spec[7])<<4 + hexToByte(spec[8])
 	case 7:
 		c.R = hexToByte(spec[1])<<4 + hexToByte(spec[2])
 		c.G = hexToByte(spec[3])<<4 + hexToByte(spec[4])

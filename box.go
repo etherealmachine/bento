@@ -36,8 +36,8 @@ type Box struct {
 	Content    string
 	Component  Component
 	Attrs      map[string]string
+	Style      Style
 	state      State
-	style      Style
 	scrollable Scrollable
 	editable   *Editable
 	dirty      bool
@@ -71,7 +71,7 @@ func (n *Box) Update() error {
 }
 
 func (n *Box) update(ctx *context) error {
-	if !n.style.Display || n.style.Hidden {
+	if !n.Style.Display || n.Style.Hidden {
 		return nil
 	}
 	if n.Parent == nil {

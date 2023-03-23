@@ -33,7 +33,7 @@ func (n *Box) buildSubcomponent(prev *Box) error {
 		return fmt.Errorf("%s must have a field or method named %s that returns a bento.Component", reflect.TypeOf(n.Component), n.Tag)
 	}
 	if style, ok := subComponent.Interface().(*Style); ok {
-		n.style = *style
+		n.Style = *style
 		n.Tag = style.Extends
 		return nil
 	} else if sub, ok := subComponent.Interface().(Component); ok {
@@ -64,8 +64,8 @@ func (n *Box) build(prev *Box) error {
 			return err
 		}
 	}
-	n.style.adopt(n)
-	if err := n.style.parseAttributes(); err != nil {
+	n.Style.adopt(n)
+	if err := n.Style.parseAttributes(); err != nil {
 		return err
 	}
 	if prev != nil && n.Tag == prev.Tag {
@@ -77,7 +77,7 @@ func (n *Box) build(prev *Box) error {
 			n.editable = &Editable{}
 		}
 	}
-	if !n.style.Display || n.style.Hidden {
+	if !n.Style.Display || n.Style.Hidden {
 		return nil
 	}
 	for i, child := range n.Children {
