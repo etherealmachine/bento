@@ -14,21 +14,23 @@ func (p *Page3) TextChange(event *bento.Event) {
 
 func (p *Page3) UI() string {
 	return `<col grow="1" justify="start" margin="24px">
-		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px">
+		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px" zIndex="300">
 			But wait, there's more!
 		</text>
 		<p
 				font="RobotoMono 16"
 				color="#ffffff"
 				margin="4px"
-				padding="16px 24px">
+				padding="16px 24px"
+				zIndex="300">
 <![CDATA[
 // Images with the <img> tag
+// Plus float and zIndex
 <img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="100" />
 <img src="profile.png" float="true" justify="end start" />
 ]]>	
 		</p>
-		<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="100" />
+		<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="200" />
 		<img src="profile.png" float="true" justify="end start" />
 		<input
 				minWidth="20em"

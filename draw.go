@@ -103,7 +103,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 	default:
 		log.Fatalf("can't draw %s", n.Tag)
 	}
-	n.fireEvent(Draw, "", img, op)
+	n.fireEvent(Draw, "", img.SubImage(n.Bounds()).(*ebiten.Image), op)
 
 	if debug {
 		op := new(ebiten.DrawImageOptions)
