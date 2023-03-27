@@ -5,11 +5,15 @@ import (
 )
 
 type Page3 struct {
-	TextInput string
+	TextInput, TextArea string
 }
 
-func (p *Page3) TextChange(event *bento.Event) {
+func (p *Page3) UpdateTextInput(event *bento.Event) {
 	p.TextInput = event.Value
+}
+
+func (p *Page3) UpdateTextArea(event *bento.Event) {
+	p.TextArea = event.Value
 }
 
 func (p *Page3) UI() string {
@@ -17,24 +21,9 @@ func (p *Page3) UI() string {
 		<text font="NotoSans 24" color="#ffffff" margin="4px" padding="12px" zIndex="300">
 			But wait, there's more!
 		</text>
-		<p
-				font="RobotoMono 16"
-				color="#ffffff"
-				margin="4px"
-				padding="16px 24px"
-				zIndex="300">
-<![CDATA[
-// Images with the <img> tag
-// Plus float and zIndex
-<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="100" />
-<img src="profile.png" float="true" justify="end start" />
-]]>	
-		</p>
-		<img src="profile.png" float="true" justify="end start" scale="0.5" zIndex="200" />
-		<img src="profile.png" float="true" justify="end start" />
 		<input
 				minWidth="20em"
-				onChange="TextChange"
+				onChange="UpdateTextInput"
 				placeholder="Editable Inputs"
 				input="input.png 6"
 				color="#ffffff"
@@ -44,12 +33,12 @@ func (p *Page3) UI() string {
 		<textarea
 				minWidth="40em"
 				minHeight="8lh"
-				onChange="TextChange"
+				onChange="UpdateTextArea"
 				placeholder="And editable multi-line text areas!"
 				input="input.png 6"
 				color="#ffffff"
 				margin="4px"
 				padding="16px"
-				value="{{ .TextInput }}" />
+				value="{{ .TextArea }}" />
 	</col>`
 }

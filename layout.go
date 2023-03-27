@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/etherealmachine/bento/text"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type layout struct {
@@ -118,9 +117,10 @@ func (n *Box) size() {
 
 // grow children of the box to fit the space available, using their "grow" attribute
 func (n *Box) grow() {
-	// special case - the root of the tree can grow in either direction to fit the full window
-	if n.Parent == nil {
-		w, h := ebiten.WindowSize()
+	// special case - the root of the tree can grow in either direction to fit the full width and height
+	if n.Parent == nil && n.target != nil {
+		bounds := n.target.Bounds()
+		w, h := bounds.Dx(), bounds.Dy()
 		if n.Style.HGrow > 0 {
 			n.fillWidth(w)
 		}

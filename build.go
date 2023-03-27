@@ -22,7 +22,6 @@ func (n *Box) isSubcomponent() bool {
 }
 
 func (n *Box) buildSubcomponent(prev *Box) error {
-
 	var subComponent reflect.Value
 	if m := reflect.ValueOf(n.Component).MethodByName(n.Tag); m.IsValid() {
 		res := m.Call(nil)
@@ -60,9 +59,7 @@ func (n *Box) build(prev *Box) error {
 		}
 	}
 	if n.isSubcomponent() {
-		if err := n.buildSubcomponent(prev); err != nil {
-			return err
-		}
+		return n.buildSubcomponent(prev)
 	}
 	n.Style.adopt(n)
 	if err := n.Style.parseAttributes(); err != nil {
@@ -72,15 +69,14 @@ func (n *Box) build(prev *Box) error {
 		n.state = prev.state
 		n.editable = prev.editable
 		n.scrollable = prev.scrollable
-	} else {
-		if n.Tag == "input" || n.Tag == "textarea" {
-			n.editable = &Editable{}
-		}
+	} else if n.Tag == "input" || n.Tag == "textarea" {
+		n.editable = &Editable{}
 	}
 	if !n.Style.Display || n.Style.Hidden {
 		return nil
 	}
-	for i, child := range n.Children {
+	i := 0
+	for _, child := range n.Children {
 		if child.Component == nil {
 			child.Component = n.Component
 		}
@@ -90,6 +86,9 @@ func (n *Box) build(prev *Box) error {
 		}
 		if err := child.build(prevChild); err != nil {
 			return err
+		}
+		if prevChild != nil && child.Tag == prevChild.Tag {
+			i++
 		}
 	}
 	return nil

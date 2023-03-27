@@ -15,6 +15,10 @@ func (n *Box) Draw(img *ebiten.Image) {
 	if !n.Style.Display || n.Style.Hidden {
 		return
 	}
+	if n.Parent == nil && (n.target == nil || n.target.SubImage(image.Rect(0, 0, 0, 0)) == nil) {
+		n.target = img
+		n.relayout()
+	}
 	mt, ml := n.Style.Margin.Top, n.Style.Margin.Left
 	pt, pl := n.Style.Padding.Top, n.Style.Padding.Left
 
@@ -119,7 +123,7 @@ func (n *Box) Draw(img *ebiten.Image) {
 	}
 
 	for _, c := range n.Children {
-		c.Draw(img)
+		c.Draw(img.SubImage(c.Bounds()).(*ebiten.Image))
 	}
 
 	if debug && n.Parent == nil {

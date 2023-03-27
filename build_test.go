@@ -34,6 +34,7 @@ func (c *BasicComponent) UI() string {
 			{{ end }}
 			</col>
 		{{ end }}
+		<input value="{{ .Count }}" />
 	</col>`
 }
 
@@ -60,6 +61,7 @@ func TestBuild(t *testing.T) {
 	col
 		text "bar: baz"
 		text "foo: bar"
+	input "5" focus=false
 `
 	got := box.String()
 	if got != want {
@@ -75,7 +77,7 @@ func TestBuild(t *testing.T) {
 		}
 		return nil
 	})
-	if want := 10; nodes != want {
+	if want := 11; nodes != want {
 		t.Fatalf("got %d nodes, want %d", nodes, want)
 	}
 }
@@ -94,6 +96,7 @@ func TestRebuild(t *testing.T) {
 	want := `col <BasicComponent>
 	row
 		text "0"
+	input "0" focus=false
 `
 	got := box.String()
 	if got != want {
@@ -110,11 +113,12 @@ func TestRebuild(t *testing.T) {
 		}
 		return nil
 	})
-	if want := 3; nodes != want {
+	if want := 4; nodes != want {
 		t.Fatalf("got %d nodes, want %d", nodes, want)
 	}
 
 	c.Count = 1
+	box.Children[1].editable.focus = true
 	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
@@ -123,6 +127,7 @@ func TestRebuild(t *testing.T) {
 		text "1"
 	col
 		text "One"
+	input "1" focus=true
 `
 	got = box.String()
 	if got != want {
@@ -130,12 +135,14 @@ func TestRebuild(t *testing.T) {
 	}
 
 	c.Count = 2
+	box.Children[2].editable.focus = false
 	if err := box.Rebuild(); err != nil {
 		t.Fatal(err)
 	}
 	want = `col <BasicComponent>
 	row
 		text "2"
+	input "2" focus=false
 `
 	got = box.String()
 	if got != want {

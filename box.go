@@ -25,8 +25,7 @@ const (
 )
 
 var (
-	windowWidth, windowHeight int
-	debug                     bool
+	debug bool
 )
 
 type Box struct {
@@ -41,6 +40,7 @@ type Box struct {
 	scrollable Scrollable
 	editable   *Editable
 	dirty      bool
+	target     *ebiten.Image
 	layout
 }
 
@@ -120,12 +120,6 @@ func (n *Box) update(ctx *context) error {
 		if n.dirty {
 			return n.Rebuild()
 		}
-		w, h := ebiten.WindowSize()
-		if w != windowWidth || h != windowHeight {
-			n.relayout()
-		}
-		windowWidth = w
-		windowHeight = h
 	}
 	return nil
 }
@@ -162,11 +156,22 @@ func (n *Box) String() string {
 		} else if n.Parent == nil || n.Component != n.Parent.Component {
 			row = append(row, fmt.Sprintf("<%s>", reflect.ValueOf(n.Component).Elem().Type().Name()))
 		}
-		if n.Content != "" {
-			if len(n.Content) > 20 {
-				row = append(row, fmt.Sprintf("%q...", strings.TrimSpace(n.Content[:20])))
+		text := n.Content
+		if text == "" {
+			text = n.Attrs["value"]
+		}
+		if text != "" {
+			if len(text) > 20 {
+				row = append(row, fmt.Sprintf("%q...", strings.TrimSpace(text[:20])))
 			} else {
-				row = append(row, fmt.Sprintf("%q", n.Content))
+				row = append(row, fmt.Sprintf("%q", text))
+			}
+		}
+		if n.editable != nil {
+			if n.editable.focus {
+				row = append(row, "focus=true")
+			} else {
+				row = append(row, "focus=false")
 			}
 		}
 		buf.WriteString(strings.Join(row, " "))
