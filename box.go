@@ -99,12 +99,10 @@ func (n *Box) update(ctx *context) error {
 				ctx.consumed = n.fireEvent(Click, "", nil, nil)
 			case ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft):
 				n.state = active
-				n.fireEvent(Hover, "", nil, nil)
-				ctx.consumed = true
+				ctx.consumed = n.fireEvent(Hover, "", nil, nil)
 			default:
 				n.state = hover
-				n.fireEvent(Hover, "", nil, nil)
-				ctx.consumed = true
+				ctx.consumed = n.fireEvent(Hover, "", nil, nil)
 			}
 		}
 	}
